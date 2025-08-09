@@ -46,6 +46,49 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  // Smart activity suggestions based on type
+  const getActivitySuggestions = (type: string): string[] => {
+    const suggestions = {
+      experience: [
+        "Museum visits, art galleries, historical sites",
+        "Tours, sightseeing, local attractions", 
+        "Entertainment, shows, concerts, events",
+        "Adventure activities, sports, recreation"
+      ],
+      food: [
+        "Breakfast, lunch, dinner at restaurants",
+        "Coffee breaks, snacks, street food",
+        "Food tours, cooking classes, wine tasting",
+        "Grocery shopping, meal preparation"
+      ],
+      travel: [
+        "Flight check-in, boarding, travel time",
+        "Train, bus, taxi, rideshare journeys",
+        "Airport transfers, commute time",
+        "Car rental pickup, driving between cities"
+      ],
+      social: [
+        "Meeting friends, family gatherings",
+        "Personal time, relaxation, spa visits",
+        "Phone calls, video chats with loved ones",
+        "Alone time, journaling, meditation"
+      ],
+      shopping: [
+        "Local markets, souvenir shopping",
+        "Grocery stores, pharmacies, essentials",
+        "Appointments (doctor, salon, services)",
+        "Banking, post office, administrative tasks"
+      ],
+      other: [
+        "Buffer time, flexible scheduling",
+        "Work calls, business meetings",
+        "Unexpected discoveries, spontaneous activities",
+        "Rest time, travel delays, contingency"
+      ]
+    };
+    
+    return suggestions[type as keyof typeof suggestions] || [];
+  };
 
   // Load trip data from database
   useEffect(() => {
