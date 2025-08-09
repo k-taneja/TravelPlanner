@@ -417,6 +417,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           View Details
                         </button>
                         <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadTripPDF(trip);
+                          }}
+                          disabled={pdfLoading === trip.id}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                            pdfLoading === trip.id
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                          title="Download PDF"
+                          aria-label="Download trip itinerary as PDF"
+                        >
+                          {pdfLoading === trip.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+                          ) : (
+                            'PDF'
+                          )}
+                        </button>
+                      </div>
                       
                       {/* Archive Button - Only for completed trips */}
                       {trip.status === 'completed' && (
@@ -442,27 +462,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         </button>
                       )}
                       
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadTripPDF(trip);
-                          }}
-                          disabled={pdfLoading === trip.id}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            pdfLoading === trip.id
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-700 text-white'
-                          }`}
-                        >
-                        title="Download PDF"
-                        aria-label="Download trip itinerary as PDF"
-                          {pdfLoading === trip.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
-                          ) : (
-                            'PDF'
-                          )}
-                        </button>
-                      </div>
-                      
                       {/* Delete Button */}
                       <button
                         onClick={(e) => {
@@ -475,7 +474,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
-                    </div>
+                      </div>
                   </div>
                 ))}
               </div>
