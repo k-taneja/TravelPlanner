@@ -38,6 +38,7 @@ export const userPreferencesService = {
             budget_preference: 'balanced',
           };
           travel_preferences: ''
+        }
         throw error;
       }
 
