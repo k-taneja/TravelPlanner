@@ -116,12 +116,12 @@ export const travelQuotes = [
 ];
 
 export const interestOptions = [
-  { id: 'nature', label: 'Nature & Outdoors', icon: '🌿' },
+  { id: 'nature', label: 'Nature', icon: '🌿' },
   { id: 'food', label: 'Food', icon: '🍽️' },
-  { id: 'history', label: 'History & Culture', icon: '🏛️' },
+  { id: 'history', label: 'History', icon: '🏛️' },
   { id: 'shopping', label: 'Shopping', icon: '🛍️' },
-  { id: 'adventure', label: 'Adventure & Sports', icon: '⛰️' },
+  { id: 'adventure', label: 'Adventure', icon: '⛰️' },
   { id: 'art', label: 'Art', icon: '🎨' },
-  { id: 'nightlife', label: 'Nightlife & Entertainment', icon: '🌙' },
-  { id: 'social', label: 'Social & Personal', icon: '👥' }
+  { id: 'nightlife', label: 'Nightlife', icon: '🌙' },
+  { id: 'family', label: 'Family', icon: '👨‍👩‍👧‍👦' }
 ];

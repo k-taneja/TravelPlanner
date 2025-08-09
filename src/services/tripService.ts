@@ -149,18 +149,3 @@ export const tripService = {
     return data;
   }
 };
-
-// Helper function to normalize activity types for database compatibility
-function normalizeActivityType(type: string): string {
-  // Map new flexible types to database-compatible types
-  const typeMapping: { [key: string]: string } = {
-    'experience': 'attraction',
-    'food': 'food',
-    'travel': 'transport', 
-    'social': 'attraction', // Social activities can be categorized as attractions
-    'shopping': 'shopping',
-    'other': 'attraction' // Default fallback
-  };
-  
-  return typeMapping[type] || 'attraction';
-}
