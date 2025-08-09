@@ -53,6 +53,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   // Track unsaved changes
   useEffect(() => {
     setHasUnsavedChanges(true);
+  });
 
   const handleSave = async () => {
     if (!user) return;
