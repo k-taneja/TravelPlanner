@@ -74,6 +74,8 @@ export const userPreferencesService = {
           budget_preference: preferences.budget_preference,
           travel_preferences: preferences.travel_preferences,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         })
         .select()
         .single();
