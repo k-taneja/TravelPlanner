@@ -171,8 +171,69 @@ RESPONSE FORMAT (JSON only, no markdown):
     // Validate and return the itinerary
     const itinerary = parsedResponse.itinerary || []
     
+    // Normalize and validate activity types to match database constraints
+    const validActivityTypes = ['attraction', 'food', 'transport', 'shopping', 'nature', 'history']
+    
+    const normalizedItinerary = itinerary.map((day: DayPlan) => ({
+      ...day,
+      activities: day.activities.map((activity: Activity) => {
+        let normalizedType = activity.type.toLowerCase().trim()
+        
+        // Map common variations to valid types
+        const typeMapping: { [key: string]: string } = {
+          'sightseeing': 'attraction',
+          'museum': 'attraction',
+          'monument': 'attraction',
+          'temple': 'attraction',
+          'palace': 'attraction',
+          'fort': 'attraction',
+          'restaurant': 'food',
+          'dining': 'food',
+          'meal': 'food',
+          'cuisine': 'food',
+          'lunch': 'food',
+          'dinner': 'food',
+          'breakfast': 'food',
+          'taxi': 'transport',
+          'bus': 'transport',
+          'train': 'transport',
+          'flight': 'transport',
+          'travel': 'transport',
+          'market': 'shopping',
+          'bazaar': 'shopping',
+          'mall': 'shopping',
+          'souvenir': 'shopping',
+          'park': 'nature',
+          'garden': 'nature',
+          'beach': 'nature',
+          'lake': 'nature',
+          'mountain': 'nature',
+          'wildlife': 'nature',
+          'historical': 'history',
+          'heritage': 'history',
+          'cultural': 'history',
+          'archaeology': 'history'
+        }
+        
+        // Check if the type needs mapping
+        if (typeMapping[normalizedType]) {
+          normalizedType = typeMapping[normalizedType]
+        }
+        
+        // If still not valid, default to 'attraction'
+        if (!validActivityTypes.includes(normalizedType)) {
+          normalizedType = 'attraction'
+        }
+        
+        return {
+          ...activity,
+          type: normalizedType
+        }
+      })
+    }))
+    
     return new Response(
-      JSON.stringify({ itinerary }),
+      JSON.stringify({ itinerary: normalizedItinerary }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
