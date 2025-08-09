@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { tripService } from '../services/tripService';
 import { pdfService } from '../services/pdfService';
+import { UserDrawer } from './UserDrawer';
 import { Search, Bell, User, Plane, Calendar, MapPin, Wifi, Clock } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -25,6 +26,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
+  const [showUserDrawer, setShowUserDrawer] = useState(false);
 
   // Load user trips from database
   useEffect(() => {
@@ -229,9 +231,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Right Icons */}
             <div className="flex items-center space-x-3">
               <button 
-                onClick={onLogout}
+                onClick={() => setShowUserDrawer(true)}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors duration-200"
-                title="Sign Out"
+                title="Account Menu"
               >
                 <User className="h-5 w-5" />
               </button>
@@ -403,6 +405,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </section>
       </main>
+
+      {/* User Drawer */}
+      <UserDrawer 
+        isOpen={showUserDrawer}
+        onClose={() => setShowUserDrawer(false)}
+        onSignOut={onLogout}
+      />
     </div>
   );
 };
