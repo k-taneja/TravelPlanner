@@ -148,42 +148,4 @@ export const tripService = {
     if (error) throw error;
     return data;
   }
-  // Archive trip
-  async archiveTrip(tripId: string) {
-    const { data, error } = await supabase
-      .from('trips')
-      .update({ archived: true, updated_at: new Date().toISOString() })
-      .eq('id', tripId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Unarchive trip
-  async unarchiveTrip(tripId: string) {
-    const { data, error } = await supabase
-      .from('trips')
-      .update({ archived: false, updated_at: new Date().toISOString() })
-      .eq('id', tripId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get archived trips
-  async getArchivedTrips(userId: string) {
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('archived', true)
-      .order('updated_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  }
 };

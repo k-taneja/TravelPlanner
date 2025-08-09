@@ -30,9 +30,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [archiveLoading, setArchiveLoading] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
-  const [archiveLoading, setArchiveLoading] = useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   // Load user trips from database
   useEffect(() => {
