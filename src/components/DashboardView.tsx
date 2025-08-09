@@ -146,12 +146,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const handleDownloadTripPDF = async (trip: any) => {
     setPdfLoading(trip.id);
     try {
+      console.log('Generating PDF for trip:', trip);
+      
       // Convert trip data to PDF format
       const pdfData = {
         id: trip.id,
         destination: trip.destination,
-        startDate: trip.start_date || '2025-03-15',
-        endDate: trip.end_date || '2025-03-18',
+        start_date: '2025-03-15', // Mock data for demo
+        end_date: '2025-03-18',   // Mock data for demo
         budget: trip.budget || 100000,
         totalCost: trip.total_cost || 92,
         pace: trip.pace || 'balanced',
@@ -159,7 +161,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         dayPlans: trip.dayPlans || [
           {
             day_number: 1,
-            date: trip.start_date || '2025-03-15',
+            date: '2025-03-15',
             total_cost: trip.total_cost || 92,
             total_duration: 390,
             activities: [
@@ -172,16 +174,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 cost: 25,
                 location_address: `Main Area, ${trip.destination}`,
                 why_this: `Perfect introduction to ${trip.destination}`
+              },
+              {
+                time: '12:30',
+                name: 'Local Cuisine Experience',
+                type: 'food',
+                description: `Authentic local food experience in ${trip.destination}`,
+                duration: 90,
+                cost: 35,
+                location_address: `Food District, ${trip.destination}`,
+                why_this: 'Experience local flavors and culinary traditions'
+              },
+              {
+                time: '15:00',
+                name: 'Cultural Site Visit',
+                type: 'history',
+                description: `Historical and cultural landmarks of ${trip.destination}`,
+                duration: 150,
+                cost: 17,
+                location_address: `Heritage Area, ${trip.destination}`,
+                why_this: 'Rich history and culture matching your interests'
               }
             ]
           }
         ]
       };
 
+      console.log('PDF data prepared:', pdfData);
       await pdfService.generateTripPDF(pdfData);
+      console.log('PDF generated successfully');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      alert('Failed to generate PDF. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate PDF. Please try again.';
+      alert(errorMessage);
     } finally {
       setPdfLoading(null);
     }

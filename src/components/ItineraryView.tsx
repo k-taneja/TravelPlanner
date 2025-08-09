@@ -153,10 +153,28 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
 
     setPdfLoading(true);
     try {
+      console.log('Downloading PDF for trip data:', tripData);
+      
+      // Ensure we have the correct data structure
+      const pdfData = {
+        id: tripData.id,
+        destination: tripData.destination,
+        start_date: tripData.start_date,
+        end_date: tripData.end_date,
+        budget: tripData.budget || 100000,
+        totalCost: tripData.total_cost || 0,
+        pace: tripData.pace || 'balanced',
+        interests: tripData.interests || [],
+        dayPlans: tripData.dayPlans || []
+      };
+      
       await pdfService.generateTripPDF(tripData);
+      console.log('PDF generation completed successfully');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      alert('Failed to generate PDF. Please try again.');
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate PDF. Please try again.';
+      alert(errorMessage);
     } finally {
       setPdfLoading(false);
     }

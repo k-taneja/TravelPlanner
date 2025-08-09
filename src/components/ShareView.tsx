@@ -12,12 +12,14 @@ export const ShareView: React.FC<ShareViewProps> = ({ onBack }) => {
   const handleDownloadPDF = async () => {
     setPdfLoading(true);
     try {
+      console.log('Starting PDF download from ShareView');
+      
       // Mock trip data for demo
       const mockTripData = {
         id: 'demo-trip',
         destination: 'Paris, France',
-        startDate: '2025-03-15',
-        endDate: '2025-03-18',
+        start_date: '2025-03-15',
+        end_date: '2025-03-18',
         budget: 100000,
         totalCost: 92,
         pace: 'balanced',
@@ -64,10 +66,13 @@ export const ShareView: React.FC<ShareViewProps> = ({ onBack }) => {
         ]
       };
 
+      console.log('Mock trip data prepared:', mockTripData);
       await pdfService.generateTripPDF(mockTripData);
+      console.log('PDF download completed successfully');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      alert('Failed to generate PDF. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate PDF. Please try again.';
+      alert(errorMessage);
     } finally {
       setPdfLoading(false);
     }
