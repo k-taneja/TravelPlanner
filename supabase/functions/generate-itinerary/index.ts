@@ -227,7 +227,6 @@ RESPONSE FORMAT (JSON only, no markdown):
     {
       "day": 1,
       "date": "YYYY-MM-DD",
-      ${isMultiDestination ? '"destinationId": "destination_id",' : ''}
       ${isMultiDestination ? '"destinationName": "Destination Name",' : ''}
       ${isMultiDestination ? '"isTravel": false,' : ''}
       ${isMultiDestination ? '"travelDetails": "Travel information if applicable",' : ''}
@@ -305,6 +304,22 @@ RESPONSE FORMAT (JSON only, no markdown):
 
     // Validate and return the itinerary
     const itinerary = parsedResponse.itinerary || []
+    
+    // Map destination names back to client-side IDs for multi-destination trips
+    if (isMultiDestination && destinations) {
+      const destinationNameToIdMap = new Map(
+        destinations.map(dest => [dest.name.toLowerCase(), dest.id])
+      )
+      
+      itinerary.forEach((day: DayPlan) => {
+        if (day.destinationName && !day.destinationId) {
+          const matchingId = destinationNameToIdMap.get(day.destinationName.toLowerCase())
+          if (matchingId) {
+            day.destinationId = matchingId
+          }
+        }
+      })
+    }
     
     // Normalize and validate activity types to match database constraints
     const validActivityTypes = ['attraction', 'food', 'transport', 'shopping', 'nature', 'history']
