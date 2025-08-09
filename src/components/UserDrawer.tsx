@@ -34,30 +34,65 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Mock archived trips data
-  const archivedTrips = [
-    {
-      id: '1',
-      destination: 'Tokyo, Japan',
-      dates: 'Dec 15-22, 2024',
-      status: 'completed',
-      image: 'https://images.pexels.com/photos/248195/pexels-photo-248195.jpeg?auto=compress&cs=tinysrgb&w=300'
-    },
-    {
-      id: '2',
-      destination: 'Bali, Indonesia',
-      dates: 'Nov 8-15, 2024',
-      status: 'completed',
-      image: 'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=300'
-    },
-    {
-      id: '3',
-      destination: 'Rome, Italy',
-      dates: 'Oct 12-18, 2024',
-      status: 'completed',
-      image: 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=300'
+  const [archivedTrips, setArchivedTrips] = useState<any[]>([]);
+  const [archivedTripsLoading, setArchivedTripsLoading] = useState(false);
+
+  // Load archived trips from database
+  const loadArchivedTrips = async () => {
+    if (!user) return;
+    
+    setArchivedTripsLoading(true);
+    try {
+      const trips = await tripService.getArchivedTrips(user.id);
+      
+      // Transform database trips to UI format
+      const transformedTrips = trips.map(trip => {
+        const startDate = new Date(trip.start_date);
+        const endDate = new Date(trip.end_date);
+        
+        // Get destination image based on location
+        const getDestinationImage = (destination: string) => {
+          const images: { [key: string]: string } = {
+            'paris': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=300',
+            'tokyo': 'https://images.pexels.com/photos/248195/pexels-photo-248195.jpeg?auto=compress&cs=tinysrgb&w=300',
+            'new york': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=300',
+            'london': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=300',
+            'rome': 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=300',
+            'bali': 'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=300'
+          };
+          
+          const key = destination.toLowerCase();
+          for (const [city, image] of Object.entries(images)) {
+            if (key.includes(city)) {
+              return image;
+            }
+          }
+          return 'https://images.pexels.com/photos/1008155/pexels-photo-1008155.jpeg?auto=compress&cs=tinysrgb&w=300';
+        };
+        
+        return {
+          id: trip.id,
+          destination: trip.destination,
+          dates: `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          status: 'completed',
+          image: getDestinationImage(trip.destination)
+        };
+      });
+      
+      setArchivedTrips(transformedTrips);
+    } catch (error) {
+      console.error('Error loading archived trips:', error);
+    } finally {
+      setArchivedTripsLoading(false);
     }
-  ];
+  };
+
+  // Load archived trips when modal opens
+  useEffect(() => {
+    if (showArchivedTrips && user) {
+      loadArchivedTrips();
+    }
+  }, [showArchivedTrips, user]);
 
   const handleDrawerItemClick = (action: string) => {
     switch (action) {
@@ -240,7 +275,12 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
 
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {archivedTrips.length === 0 ? (
+              {archivedTripsLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400 mx-auto mb-4"></div>
+                  <p className="text-slate-400">Loading archived trips...</p>
+                </div>
+              ) : archivedTrips.length === 0 ? (
                 <div className="text-center py-12">
                   <Archive className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <h4 className="text-lg font-semibold text-white mb-2">No Archived Trips</h4>

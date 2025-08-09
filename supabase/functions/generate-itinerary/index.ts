@@ -73,10 +73,21 @@ serve(async (req) => {
     // Get user preferences from database (if available)
     let userPreferences = null
     try {
-      const { data: preferences } = await supabase
+      // Get Supabase client for database queries
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      
+      const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      })
+
+      const { data: preferences } = await supabaseClient
         .from('user_preferences')
         .select('*')
-        .eq('user_id', 'current_user_id') // This would be passed from the request
+        .eq('user_id', from || 'anonymous') // Use from field or anonymous
         .single()
       userPreferences = preferences
     } catch (error) {
@@ -93,7 +104,7 @@ serve(async (req) => {
     const currentPace = paceConfig[pace] || paceConfig.balanced
 
     // Create comprehensive prompt for AI
-    const prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}. 
+    const prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}.
 
 TRIP REQUIREMENTS:
 - Destination: ${destination}
@@ -110,12 +121,12 @@ PACE-SPECIFIC REQUIREMENTS:
 
 USER PREFERENCES:
 ${userPreferences ? `
+- Day Planning Hours: ${userPreferences.start_time} to ${userPreferences.end_time}
 - Dietary Restrictions: ${userPreferences.dietary_restrictions || 'None specified'}
 - Food Preferences: ${userPreferences.food_preferences || 'Open to all cuisines'}
 - Travel Style: ${userPreferences.travel_style || 'Standard'}
-- Accessibility Needs: ${userPreferences.accessibility_needs || 'None specified'}
 - Budget Preference: ${userPreferences.budget_preference || 'Balanced spending'}
-- Accommodation Type: ${userPreferences.accommodation_type || 'Mid-range hotels'}
+- Personal Travel Preferences: ${userPreferences.travel_preferences || 'Standard travel approach'}
 ` : '- Using default preferences (no user profile found)'}
 
 BUDGET ALLOCATION GUIDELINES:
@@ -127,7 +138,7 @@ BUDGET ALLOCATION GUIDELINES:
 DETAILED REQUIREMENTS:
 1. Create exactly ${days} days with ${currentPace.activities} main activities per day
 2. Include ${currentPace.restaurants} dining experience(s) per day with local cuisine focus
-3. Start days between 8:00-10:00 AM, end by 8:00-10:00 PM based on pace
+3. ${userPreferences ? `Plan activities between ${userPreferences.start_time} and ${userPreferences.end_time} as per user preference` : 'Start days between 8:00-10:00 AM, end by 8:00-10:00 PM based on pace'}
 4. Provide realistic timing with travel time between locations
 5. Include specific addresses and coordinates for ${destination}
 6. Consider weather, local customs, and opening hours
@@ -138,13 +149,22 @@ DETAILED REQUIREMENTS:
 
 ACTIVITY TYPES TO INCLUDE:
 - Must-see attractions related to: ${interests.join(', ')}
+${userPreferences?.food_preferences && userPreferences.food_preferences !== 'all' ? `- Food experiences focusing on: ${userPreferences.food_preferences}` : '- Diverse culinary experiences'}
+${userPreferences?.dietary_restrictions ? `- All food suggestions must accommodate: ${userPreferences.dietary_restrictions}` : ''}
 - Cultural experiences and local traditions
-- Food experiences matching dietary preferences
+${userPreferences?.travel_preferences ? `- Experiences matching user's travel style: ${userPreferences.travel_preferences}` : ''}
 - Hidden gems and off-the-beaten-path locations
 - Photo-worthy spots and Instagram-able locations
-- Local markets, shopping areas (if shopping is an interest)
-- Nature/outdoor activities (if nature is an interest)
-- Historical sites and museums (if history is an interest)
+${interests.includes('shopping') ? '- Local markets and authentic shopping experiences' : ''}
+${interests.includes('nature') ? '- Nature and outdoor activities' : ''}
+${interests.includes('history') ? '- Historical sites and museums' : ''}
+
+TRANSPORTATION AND BUDGET CONSIDERATIONS:
+${userPreferences?.budget_preference === 'budget' ? '- Prioritize budget-friendly transport options (public transport, walking)' : ''}
+${userPreferences?.budget_preference === 'luxury' ? '- Include premium transport options (private cars, first-class)' : ''}
+${userPreferences?.budget_preference === 'balanced' ? '- Mix of transport options balancing cost and convenience' : ''}
+${userPreferences?.travel_style === 'backpacker' ? '- Focus on budget accommodations and local transport' : ''}
+${userPreferences?.travel_style === 'luxury' ? '- Premium experiences and comfortable transport' : ''}
 
 TIMING AND LOGISTICS:
 - Account for travel time between locations (15-30 minutes buffer)

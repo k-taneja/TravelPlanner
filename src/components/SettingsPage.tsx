@@ -16,9 +16,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     food_preferences: 'all',
     dietary_restrictions: '',
     travel_style: 'standard',
-    accommodation_type: 'hotel',
     budget_preference: 'balanced',
-    accessibility_needs: ''
+    travel_preferences: ''
   });
   
   const [loading, setLoading] = useState(true);
@@ -54,7 +53,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   // Track unsaved changes
   useEffect(() => {
     setHasUnsavedChanges(true);
-  }, [settings.start_time, settings.end_time, settings.food_preferences, settings.dietary_restrictions, settings.travel_style, settings.accommodation_type, settings.budget_preference, settings.accessibility_needs]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -319,6 +317,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
                   </select>
                 </div>
 
+                {/* Travel Preferences (Natural Language) */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-white mb-3">
+                    Travel Preferences (Describe in your own words)
+                  </label>
+                  <textarea
+                    value={settings.travel_preferences || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, travel_preferences: e.target.value }))}
+                    placeholder="e.g., I love exploring local markets, trying street food, visiting historical sites, and prefer walking over taxis. I enjoy authentic experiences over touristy attractions..."
+                    rows={4}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                  />
+                  <p className="text-xs text-slate-400 mt-2">
+                    Describe your travel style, preferences, and what makes a trip memorable for you. This helps us create more personalized itineraries.
+                  </p>
+                </div>
+
                 {/* Budget Preference */}
                 <div>
                   <label className="block text-sm font-semibold text-white mb-3">
@@ -338,54 +353,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
               </div>
             </section>
 
-            {/* Accommodation Section */}
-            <section className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-              <div className="flex items-center mb-6">
-                <Building className="h-6 w-6 text-pink-500 mr-3" />
-                <div>
-                  <h2 className="text-xl font-bold text-white">Accommodation & Accessibility</h2>
-                  <p className="text-slate-400 text-sm mt-1">
-                    Set your lodging preferences and accessibility needs
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {/* Accommodation Type */}
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-3">
-                    Accommodation Preference
-                  </label>
-                  <select
-                    value={settings.accommodation_type}
-                    onChange={(e) => setSettings(prev => ({ ...prev, accommodation_type: e.target.value }))}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  >
-                    <option value="hostel">Hostel</option>
-                    <option value="budget_hotel">Budget Hotel</option>
-                    <option value="hotel">Mid-range Hotel</option>
-                    <option value="luxury_hotel">Luxury Hotel</option>
-                    <option value="resort">Resort</option>
-                    <option value="airbnb">Airbnb/Homestay</option>
-                    <option value="boutique">Boutique Hotel</option>
-                  </select>
-                </div>
-
-                {/* Accessibility Needs */}
-                <div>
-                  <label className="block text-sm font-semibold text-white mb-3">
-                    Accessibility Needs
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.accessibility_needs}
-                    onChange={(e) => setSettings(prev => ({ ...prev, accessibility_needs: e.target.value }))}
-                    placeholder="e.g., Wheelchair accessible, Hearing assistance, Visual aids"
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </section>
           </div>
 
           {/* Bottom Save Button for Mobile */}

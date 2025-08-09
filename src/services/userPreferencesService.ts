@@ -8,9 +8,8 @@ export interface UserPreferences {
   food_preferences: string;
   dietary_restrictions: string;
   travel_style: string;
-  accommodation_type: string;
   budget_preference: string;
-  accessibility_needs: string;
+  travel_preferences: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -37,9 +36,8 @@ export const userPreferencesService = {
             travel_style: 'standard',
             accommodation_type: 'hotel',
             budget_preference: 'balanced',
-            accessibility_needs: ''
           };
-        }
+          travel_preferences: ''
         throw error;
       }
 
@@ -54,9 +52,8 @@ export const userPreferencesService = {
         food_preferences: 'all',
         dietary_restrictions: '',
         travel_style: 'standard',
-        accommodation_type: 'hotel',
         budget_preference: 'balanced',
-        accessibility_needs: ''
+        travel_preferences: ''
       };
     }
   },
@@ -73,9 +70,8 @@ export const userPreferencesService = {
           food_preferences: preferences.food_preferences,
           dietary_restrictions: preferences.dietary_restrictions,
           travel_style: preferences.travel_style,
-          accommodation_type: preferences.accommodation_type,
           budget_preference: preferences.budget_preference,
-          accessibility_needs: preferences.accessibility_needs,
+          travel_preferences: preferences.travel_preferences,
           updated_at: new Date().toISOString()
         })
         .select()
