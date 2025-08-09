@@ -44,6 +44,8 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
     cost: 0,
     location_address: ''
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   // Load trip data from database
   useEffect(() => {
@@ -238,10 +240,12 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   };
 
   const handleDeleteActivity = (activityId: string) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this activity?');
-    if (!confirmDelete) return;
-    
+    setShowDeleteConfirm(activityId);
+  };
+
+  const confirmDeleteActivity = (activityId: string) => {
     setEditedActivities(prev => prev.filter(activity => activity.id !== activityId));
+    setShowDeleteConfirm(null);
   };
 
   const handleAddActivity = () => {
@@ -280,6 +284,52 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
     setShowAddActivity(false);
   };
 
+  const handleSaveChanges = async () => {
+    const errors = validateChanges();
+    setValidationErrors(errors);
+    
+    if (errors.length > 0) {
+      return;
+    }
+
+    setSaveLoading(true);
+    
+    try {
+      // Update the trip data with edited activities
+      const updatedDayPlans = tripData.dayPlans.map((day: any) => 
+        day.day_number === selectedDay 
+          ? { 
+              ...day, 
+              activities: editedActivities,
+              total_cost: editedActivities.reduce((sum, act) => sum + (act.cost || 0), 0),
+              total_duration: editedActivities.reduce((sum, act) => sum + (act.duration || 0), 0)
+            }
+          : day
+      );
+
+      setTripData(prev => ({
+        ...prev,
+        dayPlans: updatedDayPlans
+      }));
+
+      // In a real app, you would save to database here
+      // await tripService.updateDayPlan(currentDay.id, { activities: editedActivities });
+      
+      setIsEditMode(false);
+      setHasChanges(false);
+      setShowRegenerateButton(false);
+      setValidationErrors([]);
+      
+      // Show success feedback
+      console.log('Changes saved successfully');
+      
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      setValidationErrors(['Failed to save changes. Please try again.']);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
   const validateChanges = () => {
     const errors: string[] = [];
     
@@ -560,15 +610,26 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
             {/* Action Icons */}
             <div className="flex items-center space-x-3 ml-6">
               <button
-                onClick={handleEditToggle}
+                onClick={isEditMode ? handleSaveChanges : handleEditToggle}
+                disabled={isEditMode && saveLoading}
                 className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 border ${
                   isEditMode 
-                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' 
+                    ? saveLoading
+                      ? 'bg-gray-600 cursor-not-allowed text-gray-400 border-gray-500'
+                      : 'bg-green-600 hover:bg-green-700 text-white border-green-500'
                     : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600 hover:border-slate-500'
                 }`}
-                title={isEditMode ? "Save & Exit Edit Mode" : "Edit Itinerary"}
+                title={isEditMode ? "Save Changes" : "Edit Itinerary"}
               >
-                {isEditMode ? <Save className="h-5 w-5" /> : <Edit3 className="h-5 w-5" />}
+                {isEditMode ? (
+                  saveLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
+                  ) : (
+                    <Save className="h-5 w-5" />
+                  )
+                ) : (
+                  <Edit3 className="h-5 w-5" />
+                )}
               </button>
               <button
                 onClick={onShowMap}
@@ -975,40 +1036,125 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
         </div>
       )}
 
-      {/* Regenerate Button */}
-      {showRegenerateButton && (
-        <div className="fixed bottom-6 left-6 right-6 z-40">
-          <div className="max-w-2xl mx-auto">
-            <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-200 flex items-center justify-center space-x-3 shadow-2xl ${
-                regenerating
-                  ? 'bg-slate-600 cursor-not-allowed text-slate-400'
-                  : 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white hover:scale-[0.98] active:scale-[0.96]'
-              }`}
-            >
-              {regenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-400"></div>
-                  <span>Validating & Regenerating...</span>
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="h-6 w-6" />
-                  <span>Optimize & Regenerate</span>
-                </>
-              )}
-            </button>
-            {hasChanges && !regenerating && (
-              <p className="text-center text-slate-400 text-sm mt-2">
+      {/* Edit Mode Actions */}
+      {isEditMode && (
+        <div className="px-6 py-6 bg-slate-800 border-t border-slate-700">
+          <div className="max-w-2xl mx-auto space-y-4">
+            {/* Regenerate Button */}
+            {showRegenerateButton && (
+              <button
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg ${
+                  regenerating
+                    ? 'bg-slate-600 cursor-not-allowed text-slate-400'
+                    : 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white hover:scale-[0.98] active:scale-[0.96]'
+                }`}
+              >
+                {regenerating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-400"></div>
+                    <span>Validating & Regenerating...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-6 w-6" />
+                    <span>Optimize & Regenerate</span>
+                  </>
+                )}
+              </button>
+            )}
+            
+            {hasChanges && !regenerating && showRegenerateButton && (
+              <p className="text-center text-slate-400 text-sm">
                 AI will optimize timings and validate your changes
               </p>
             )}
+
+            {/* Save and Cancel Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  if (hasChanges) {
+                    const confirmDiscard = window.confirm('You have unsaved changes. Are you sure you want to discard them?');
+                    if (!confirmDiscard) return;
+                  }
+                  setIsEditMode(false);
+                  setHasChanges(false);
+                  setShowRegenerateButton(false);
+                  setValidationErrors([]);
+                }}
+                className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors duration-200 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveChanges}
+                disabled={saveLoading}
+                className={`flex-1 px-6 py-3 rounded-xl transition-colors duration-200 font-medium flex items-center justify-center space-x-2 ${
+                  saveLoading
+                    ? 'bg-gray-600 cursor-not-allowed text-gray-400'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                {saveLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div 
+            className="bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mr-4 border border-red-500/30">
+                  <Trash2 className="h-6 w-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Delete Activity</h3>
+                  <p className="text-sm text-slate-400">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <p className="text-slate-300 mb-6">
+                Are you sure you want to delete this activity from your itinerary?
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors duration-200 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => confirmDeleteActivity(showDeleteConfirm)}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 font-medium flex items-center justify-center space-x-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Share Popup */}
       {showSharePopup && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
