@@ -151,7 +151,20 @@ MULTI-DESTINATION TRIP REQUIREMENTS:
 - Primary Interests: ${interests.join(', ')}
 
 ${tripType === 'multi_fixed' ? 
-    }
+    `FIXED ALLOCATION WITH OPTIMIZATION:
+- Maintain specified days per destination: ${destinations.map(d => `${d.name} (${d.days} days)`).join(', ')}
+- But REORDER destinations for optimal route efficiency
+- Add travel days between destinations (not counted in fixed days)
+- Total trip must be exactly ${days} days including travel days` :
+  `FLEXIBLE ALLOCATION WITH FULL OPTIMIZATION:
+- REORDER destinations for maximum efficiency
+- REALLOCATE days based on interest alignment and destination density
+- Suggest 2-5 days per destination based on available activities
+- Ensure minimum 2 days per destination for meaningful experience
+- Include travel days between destinations
+- Total trip must be exactly ${days} days`
+}
+
 CRITICAL REQUIREMENTS FOR ${days}-DAY TRIP:
 1. YOU MUST GENERATE EXACTLY ${days} DAYS - THIS IS MANDATORY
 2. NEVER GENERATE FEWER THAN ${days} DAYS - SYSTEM WILL REJECT INCOMPLETE ITINERARIES
@@ -165,23 +178,6 @@ ROUTE OPTIMIZATION MANDATORY REQUIREMENTS:
 - OPTIMIZE TO: Mumbai → Goa → Bangalore → Chennai (logical flow)
 - REASONING: Reduces backtracking, saves travel time and costs
 - ALWAYS EXPLAIN: Why you chose this route over user's original sequence
-)
-}
-
-${tripType === 'multi_fixed' ? 
-  `FIXED ALLOCATION WITH OPTIMIZATION:
-- Maintain specified days per destination: ${destinations.map(d => `${d.name} (${d.days} days)`).join(', ')}
-- But REORDER destinations for optimal route efficiency
-- Add travel days between destinations (not counted in fixed days)
-- Total trip must be exactly ${days} days including travel days` :
-  `FLEXIBLE ALLOCATION WITH FULL OPTIMIZATION:
-- REORDER destinations for maximum efficiency
-- REALLOCATE days based on interest alignment and destination density
-- Suggest 2-5 days per destination based on available activities
-- Ensure minimum 2 days per destination for meaningful experience
-- Include travel days between destinations
-- Total trip must be exactly ${days} days`
-}
 
 ROUTE OPTIMIZATION EXAMPLES:
 - If user inputs: Mumbai → Goa → Chennai → Bangalore
@@ -654,7 +650,8 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
   // Calculate optimal day allocation for the FULL trip duration
   const travelDays = Math.max(0, optimizedDestinations.length - 1) // Travel days between destinations
   const availableDays = Math.max(totalDays - travelDays, optimizedDestinations.length * 2) // Ensure minimum 2 days per destination
-    const availableDays = totalDays - travelDays
+  
+  if (request.tripType === 'multi_flexible') {
     const baseDaysPerDestination = Math.floor(availableDays / optimizedDestinations.length)
     const extraDays = availableDays % optimizedDestinations.length
     
@@ -668,8 +665,6 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
   
   // Process optimized destinations in order
   for (let destIndex = 0; destIndex < optimizedDestinations.length; destIndex++) {
-    const destination = optimizedDestinations[destIndex]
-    const isLastDestination = destIndex === optimizedDestinations.length - 1
     const destination = optimizedDestinations[destIndex]
     const isLastDestination = destIndex === optimizedDestinations.length - 1
     
@@ -769,7 +764,7 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
         totalCost: Math.floor(request.budget * 0.1),
         totalDuration: 240,
         isTravel: true,
-        travelDetails: `Travel day from ${destination.name} to ${nextDestination.name}`
+        travelDetails: `Travel day from ${destination.name} to ${nextDestination.name}`,
         destinationId: nextDestination.id,
         destinationName: nextDestination.name
       })
