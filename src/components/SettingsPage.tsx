@@ -26,11 +26,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
   const [success, setSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Track if settings have been initially loaded
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
   // Load user preferences on component mount
   useEffect(() => {
     const loadSettings = async () => {
       if (!user) {
         setLoading(false);
+        setSettingsLoaded(true);
         return;
       }
 
@@ -38,35 +42,31 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
         const preferences = await userPreferencesService.getUserPreferences(user.id);
         if (preferences) {
           setSettings(preferences);
+          // Set initial settings after loading
+          setInitialSettings(preferences);
         }
       } catch (err) {
         console.error('Error loading settings:', err);
         setError('Failed to load settings');
       } finally {
         setLoading(false);
+        setSettingsLoaded(true);
       }
     };
 
     loadSettings();
   }, [user]);
 
-  // Track unsaved changes by comparing with initial loaded settings
+  // Track initial settings for change detection
   const [initialSettings, setInitialSettings] = useState<UserPreferences | null>(null);
-
-  // Set initial settings when loaded
-  useEffect(() => {
-    if (!loading && !initialSettings) {
-      setInitialSettings(settings);
-    }
-  }, [loading, settings, initialSettings]);
 
   // Check for changes whenever settings change
   useEffect(() => {
-    if (initialSettings) {
+    if (initialSettings && settingsLoaded) {
       const hasChanges = JSON.stringify(settings) !== JSON.stringify(initialSettings);
       setHasUnsavedChanges(hasChanges);
     }
-  }, [settings, initialSettings]);
+  }, [settings, initialSettings, settingsLoaded]);
 
   const handleSave = async () => {
     if (!user) return;
