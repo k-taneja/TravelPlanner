@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Share2, ArrowRight, MessageCircle, Copy, Download, X } from 'lucide-react';
+import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Share2, ArrowRight, MessageCircle, Copy, Download, X, Save, RotateCcw, GripVertical, AlertTriangle, CheckCircle } from 'lucide-react';
 import { tripService } from '../services/tripService';
 import { useAuth } from '../hooks/useAuth';
 import { pdfService } from '../services/pdfService';
@@ -24,6 +24,13 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   const [showUserDrawer, setShowUserDrawer] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedActivities, setEditedActivities] = useState<any[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [showRegenerateButton, setShowRegenerateButton] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [tripData, setTripData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +120,22 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
 
   const currentDay = tripData?.dayPlans?.find((day: any) => day.day_number === selectedDay);
 
+  // Initialize edited activities when entering edit mode
+  useEffect(() => {
+    if (isEditMode && currentDay?.activities) {
+      setEditedActivities([...currentDay.activities]);
+    }
+  }, [isEditMode, currentDay]);
+
+  // Check for changes
+  useEffect(() => {
+    if (isEditMode && currentDay?.activities && editedActivities.length > 0) {
+      const hasModifications = JSON.stringify(currentDay.activities) !== JSON.stringify(editedActivities);
+      setHasChanges(hasModifications);
+      setShowRegenerateButton(hasModifications);
+    }
+  }, [editedActivities, currentDay, isEditMode]);
+
   const getActivityIcon = (type: Activity['type']) => {
     const icons = {
       attraction: '🏛️',
@@ -148,6 +171,141 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   const downloadPDF = () => {
     handleDownloadPDF();
     setShowSharePopup(false);
+  };
+
+  const handleEditToggle = () => {
+    if (isEditMode && hasChanges) {
+      const confirmDiscard = window.confirm('You have unsaved changes. Are you sure you want to discard them?');
+      if (!confirmDiscard) return;
+    }
+    
+    setIsEditMode(!isEditMode);
+    setHasChanges(false);
+    setShowRegenerateButton(false);
+    setValidationErrors([]);
+    
+    if (!isEditMode && currentDay?.activities) {
+      setEditedActivities([...currentDay.activities]);
+    }
+  };
+
+  const handleActivityChange = (activityId: string, field: string, value: any) => {
+    setEditedActivities(prev => 
+      prev.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, [field]: value }
+          : activity
+      )
+    );
+  };
+
+  const handleDragStart = (e: React.DragEvent, activityId: string) => {
+    setDraggedItem(activityId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    
+    if (!draggedItem || draggedItem === targetId) return;
+    
+    const draggedIndex = editedActivities.findIndex(a => a.id === draggedItem);
+    const targetIndex = editedActivities.findIndex(a => a.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const newActivities = [...editedActivities];
+    const [draggedActivity] = newActivities.splice(draggedIndex, 1);
+    newActivities.splice(targetIndex, 0, draggedActivity);
+    
+    setEditedActivities(newActivities);
+    setDraggedItem(null);
+  };
+
+  const validateChanges = () => {
+    const errors: string[] = [];
+    
+    // Check for time conflicts
+    const sortedActivities = [...editedActivities].sort((a, b) => a.time.localeCompare(b.time));
+    
+    for (let i = 0; i < sortedActivities.length - 1; i++) {
+      const current = sortedActivities[i];
+      const next = sortedActivities[i + 1];
+      
+      const currentEnd = new Date(`2000-01-01T${current.time}`);
+      currentEnd.setMinutes(currentEnd.getMinutes() + (current.duration || 0));
+      
+      const nextStart = new Date(`2000-01-01T${next.time}`);
+      
+      if (currentEnd > nextStart) {
+        errors.push(`Time conflict: "${current.name}" overlaps with "${next.name}"`);
+      }
+    }
+    
+    // Check for missing required fields
+    editedActivities.forEach((activity, index) => {
+      if (!activity.name?.trim()) {
+        errors.push(`Activity ${index + 1}: Name is required`);
+      }
+      if (!activity.time) {
+        errors.push(`Activity ${index + 1}: Time is required`);
+      }
+    });
+    
+    // Check for unrealistic durations
+    editedActivities.forEach((activity) => {
+      if (activity.duration && (activity.duration < 15 || activity.duration > 480)) {
+        errors.push(`"${activity.name}": Duration should be between 15 minutes and 8 hours`);
+      }
+    });
+    
+    return errors;
+  };
+
+  const handleRegenerate = async () => {
+    const errors = validateChanges();
+    setValidationErrors(errors);
+    
+    if (errors.length > 0) {
+      return;
+    }
+    
+    setRegenerating(true);
+    
+    try {
+      // Simulate API call to regenerate/validate itinerary
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // In a real app, you would call the backend to validate and potentially regenerate
+      // For now, we'll just save the changes
+      console.log('Regenerating itinerary with changes:', editedActivities);
+      
+      // Update the trip data with edited activities
+      setTripData(prev => ({
+        ...prev,
+        dayPlans: prev.dayPlans.map((day: any) => 
+          day.day_number === selectedDay 
+            ? { ...day, activities: editedActivities }
+            : day
+        )
+      }));
+      
+      setIsEditMode(false);
+      setHasChanges(false);
+      setShowRegenerateButton(false);
+      setValidationErrors([]);
+      
+    } catch (error) {
+      console.error('Error regenerating itinerary:', error);
+      setValidationErrors(['Failed to regenerate itinerary. Please try again.']);
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -292,6 +450,17 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
             {/* Action Icons */}
             <div className="flex items-center space-x-3 ml-6">
               <button
+                onClick={handleEditToggle}
+                className={`p-3 rounded-xl transition-all duration-200 hover:scale-105 border ${
+                  isEditMode 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-500' 
+                    : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-600 hover:border-slate-500'
+                }`}
+                title={isEditMode ? "Save & Exit Edit Mode" : "Edit Itinerary"}
+              >
+                {isEditMode ? <Save className="h-5 w-5" /> : <Edit3 className="h-5 w-5" />}
+              </button>
+              <button
                 onClick={onShowMap}
                 className="p-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all duration-200 hover:scale-105 border border-slate-600 hover:border-slate-500"
                 title="View on Map"
@@ -333,6 +502,37 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
       {/* Activities */}
       {currentDay && (
         <div className="px-6 py-6 space-y-4">
+          {/* Edit Mode Header */}
+          {isEditMode && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center space-x-2 mb-2">
+                <Edit3 className="h-5 w-5 text-blue-400" />
+                <h3 className="font-semibold text-blue-400">Edit Mode Active</h3>
+              </div>
+              <p className="text-sm text-blue-300">
+                You can now modify activity details and drag items to reorder them. Changes will be validated when you regenerate.
+              </p>
+            </div>
+          )}
+
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center space-x-2 mb-3">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <h3 className="font-semibold text-red-400">Validation Issues</h3>
+              </div>
+              <ul className="space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index} className="text-sm text-red-300 flex items-start space-x-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    <span>{error}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-bold text-white">
@@ -355,20 +555,46 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
             </div>
           </div>
 
-          {currentDay.activities?.map((activity: any, index: number) => (
+          {(isEditMode ? editedActivities : currentDay.activities)?.map((activity: any, index: number) => (
             <div key={activity.id} className="relative">
               {/* Timeline connector */}
-              {index < (currentDay.activities?.length || 0) - 1 && (
+              {index < ((isEditMode ? editedActivities : currentDay.activities)?.length || 0) - 1 && (
                 <div className="absolute left-6 top-16 w-0.5 h-8 bg-slate-600" />
               )}
               
-              <div className="bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-700 hover:shadow-md transition-all duration-200">
+              <div 
+                className={`bg-slate-800 rounded-xl p-6 shadow-sm border transition-all duration-200 ${
+                  isEditMode 
+                    ? 'border-slate-600 hover:border-slate-500 cursor-move' 
+                    : 'border-slate-700 hover:shadow-md'
+                } ${draggedItem === activity.id ? 'opacity-50' : ''}`}
+                draggable={isEditMode}
+                onDragStart={(e) => handleDragStart(e, activity.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, activity.id)}
+              >
                 <div className="flex items-start space-x-4">
+                  {/* Drag Handle */}
+                  {isEditMode && (
+                    <div className="flex-shrink-0 pt-1">
+                      <GripVertical className="h-5 w-5 text-slate-400 cursor-move" />
+                    </div>
+                  )}
+
                   {/* Time & Icon */}
                   <div className="flex-shrink-0 text-center">
-                    <div className="text-sm font-semibold mb-1" style={{ color: '#ff497c' }}>
-                      {formatTime(activity.time)}
-                    </div>
+                    {isEditMode ? (
+                      <input
+                        type="time"
+                        value={activity.time}
+                        onChange={(e) => handleActivityChange(activity.id, 'time', e.target.value)}
+                        className="text-sm font-semibold mb-1 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white w-20"
+                      />
+                    ) : (
+                      <div className="text-sm font-semibold mb-1" style={{ color: '#ff497c' }}>
+                        {formatTime(activity.time)}
+                      </div>
+                    )}
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg border-2" style={{ backgroundColor: '#ff497c20', borderColor: '#ff497c' }}>
                       {getActivityIcon(activity.type)}
                     </div>
@@ -377,7 +603,17 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                   {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-white">{activity.name}</h3>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={activity.name}
+                          onChange={(e) => handleActivityChange(activity.id, 'name', e.target.value)}
+                          className="font-semibold text-white bg-slate-700 border border-slate-600 rounded px-3 py-1 flex-1 mr-4"
+                          placeholder="Activity name"
+                        />
+                      ) : (
+                        <h3 className="font-semibold text-white">{activity.name}</h3>
+                      )}
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => setShowWhyThis(showWhyThis === activity.id ? null : activity.id)}
@@ -388,24 +624,70 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                         >
                           <HelpCircle className="h-4 w-4" />
                         </button>
-                        <button className="p-1.5 text-slate-400 hover:text-slate-300 transition-colors duration-200 rounded-lg hover:bg-slate-700">
-                          <Edit3 className="h-4 w-4" />
-                        </button>
+                        {!isEditMode && (
+                          <button 
+                            onClick={handleEditToggle}
+                            className="p-1.5 text-slate-400 hover:text-slate-300 transition-colors duration-200 rounded-lg hover:bg-slate-700"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     
-                    <p className="text-slate-300 mb-3">{activity.description}</p>
+                    {isEditMode ? (
+                      <textarea
+                        value={activity.description}
+                        onChange={(e) => handleActivityChange(activity.id, 'description', e.target.value)}
+                        className="text-slate-300 mb-3 bg-slate-700 border border-slate-600 rounded px-3 py-2 w-full resize-none"
+                        rows={2}
+                        placeholder="Activity description"
+                      />
+                    ) : (
+                      <p className="text-slate-300 mb-3">{activity.description}</p>
+                    )}
                     
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-4 text-slate-400">
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {activity.duration}min
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs mr-1">₹</span>
-                          {activity.cost?.toLocaleString('en-IN') || '0'}
-                        </div>
+                        {isEditMode ? (
+                          <>
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              <input
+                                type="number"
+                                value={activity.duration || ''}
+                                onChange={(e) => handleActivityChange(activity.id, 'duration', parseInt(e.target.value) || 0)}
+                                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 w-16 text-white"
+                                placeholder="60"
+                                min="15"
+                                max="480"
+                              />
+                              <span className="ml-1">min</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="text-xs mr-1">₹</span>
+                              <input
+                                type="number"
+                                value={activity.cost || ''}
+                                onChange={(e) => handleActivityChange(activity.id, 'cost', parseInt(e.target.value) || 0)}
+                                className="bg-slate-700 border border-slate-600 rounded px-2 py-1 w-20 text-white"
+                                placeholder="0"
+                                min="0"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              {activity.duration}min
+                            </div>
+                            <div className="flex items-center">
+                              <span className="text-xs mr-1">₹</span>
+                              {activity.cost?.toLocaleString('en-IN') || '0'}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -423,6 +705,40 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Regenerate Button */}
+      {showRegenerateButton && (
+        <div className="fixed bottom-6 left-6 right-6 z-40">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-200 flex items-center justify-center space-x-3 shadow-2xl ${
+                regenerating
+                  ? 'bg-slate-600 cursor-not-allowed text-slate-400'
+                  : 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white hover:scale-[0.98] active:scale-[0.96]'
+              }`}
+            >
+              {regenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-400"></div>
+                  <span>Validating & Regenerating...</span>
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-6 w-6" />
+                  <span>Regenerate Itinerary</span>
+                </>
+              )}
+            </button>
+            {hasChanges && !regenerating && (
+              <p className="text-center text-slate-400 text-sm mt-2">
+                Review and validate your changes before regenerating
+              </p>
+            )}
+          </div>
         </div>
       )}
 
