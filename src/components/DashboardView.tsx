@@ -65,14 +65,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           // Get destination image based on location
           const getDestinationImage = (destination: string) => {
             const images: { [key: string]: string } = {
-              'paris': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'tokyo': 'https://images.pexels.com/photos/248195/pexels-photo-248195.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'bali': 'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'rome': 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'barcelona': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'london': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'new york': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'dubai': 'https://images.pexels.com/photos/1470405/pexels-photo-1470405.jpeg?auto=compress&cs=tinysrgb&w=400'
+              // Iconic landmark images for major cities
+              'paris': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Eiffel Tower
+              'tokyo': 'https://images.pexels.com/photos/248195/pexels-photo-248195.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Tokyo skyline
+              'new york': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // NYC skyline
+              'london': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Big Ben/London
+              'rome': 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Colosseum
+              'barcelona': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Sagrada Familia
+              'dubai': 'https://images.pexels.com/photos/1470405/pexels-photo-1470405.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Burj Khalifa
+              'bali': 'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Bali temple
+              'sydney': 'https://images.pexels.com/photos/783682/pexels-photo-783682.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Sydney Opera House
+              'mumbai': 'https://images.pexels.com/photos/1007426/pexels-photo-1007426.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Mumbai skyline
+              'delhi': 'https://images.pexels.com/photos/789750/pexels-photo-789750.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // India Gate
+              'singapore': 'https://images.pexels.com/photos/1134166/pexels-photo-1134166.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Marina Bay
+              'bangkok': 'https://images.pexels.com/photos/1007426/pexels-photo-1007426.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Bangkok temple
+              'istanbul': 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Hagia Sophia
+              'amsterdam': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Amsterdam canals
+              'berlin': 'https://images.pexels.com/photos/109629/pexels-photo-109629.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Brandenburg Gate
+              'madrid': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Madrid architecture
+              'lisbon': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Lisbon trams
+              'vienna': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Vienna palace
+              'prague': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Prague castle
+              'budapest': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300' // Budapest parliament
             };
             
             const key = destination.toLowerCase();
@@ -81,8 +95,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 return image;
               }
             }
-            // Default travel image
-            return 'https://images.pexels.com/photos/1008155/pexels-photo-1008155.jpeg?auto=compress&cs=tinysrgb&w=400';
+            // Default travel image with better quality
+            return 'https://images.pexels.com/photos/1008155/pexels-photo-1008155.jpeg?auto=compress&cs=tinysrgb&w=500&h=300';
           };
           
           return {
@@ -392,10 +406,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </div>
                     
                     {/* Card Footer */}
-                    <div className="p-4">
+                    <div className="p-6 bg-gradient-to-t from-gray-50 to-white">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-sm text-gray-600 mb-1">{trip.dates}</p>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <p className="text-sm font-medium text-gray-700">{trip.dates}</p>
+                            {/* Archive and Delete buttons positioned next to date */}
+                            <div className="flex items-center space-x-1">
+                              {/* Archive Button - Only for completed trips */}
+                              {trip.status === 'completed' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleArchiveTrip(trip.id);
+                                  }}
+                                  disabled={archiveLoading === trip.id}
+                                  className={`p-1.5 rounded-lg transition-all duration-200 ${
+                                    archiveLoading === trip.id
+                                      ? 'bg-gray-200 cursor-not-allowed'
+                                      : 'bg-orange-100 hover:bg-orange-200 hover:scale-110'
+                                  }`}
+                                  title="Archive Trip"
+                                  aria-label="Archive completed trip"
+                                >
+                                  {archiveLoading === trip.id ? (
+                                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-400 border-t-transparent"></div>
+                                  ) : (
+                                    <Archive className="h-3 w-3 text-orange-600" />
+                                  )}
+                                </button>
+                              )}
+                              
+                              {/* Delete Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowDeleteConfirm(trip.id);
+                                }}
+                                className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-all duration-200 hover:scale-110"
+                                title="Delete Trip"
+                                aria-label="Delete trip permanently"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
                           <div className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" style={{ color: getStatusColor(trip.status) }} />
                             <span className="text-sm font-medium" style={{ color: getStatusColor(trip.status) }}>
@@ -406,7 +461,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                       
                       {/* Quick Actions */}
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-3 mt-4">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -414,7 +469,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           }}
                         className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
                         >
-                          View Details
+                          <span className="flex items-center justify-center">View Details</span>
                         </button>
                         <button
                           onClick={(e) => {
@@ -423,7 +478,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           }}
                           disabled={pdfLoading === trip.id}
                           className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            pdfLoading === trip.id
+                            pdfLoading === trip.id 
                               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                               : 'bg-blue-600 hover:bg-blue-700 text-white'
                           }`}
@@ -433,48 +488,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           {pdfLoading === trip.id ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
                           ) : (
-                            'PDF'
+                            <span className="flex items-center space-x-1">
+                              <span>PDF</span>
+                            </span>
                           )}
                         </button>
                       </div>
-                      
-                      {/* Archive Button - Only for completed trips */}
-                      {trip.status === 'completed' && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleArchiveTrip(trip.id);
-                          }}
-                          disabled={archiveLoading === trip.id}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            archiveLoading === trip.id
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
-                          }`}
-                          title="Archive Trip"
-                          aria-label="Archive completed trip"
-                        >
-                          {archiveLoading === trip.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
-                          ) : (
-                            <Archive className="h-4 w-4" />
-                          )}
-                        </button>
-                      )}
-                      
-                      {/* Delete Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowDeleteConfirm(trip.id);
-                        }}
-                        className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors duration-200"
-                        title="Delete Trip"
-                        aria-label="Delete trip permanently"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
