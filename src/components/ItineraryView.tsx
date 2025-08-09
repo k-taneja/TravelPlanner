@@ -492,7 +492,15 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                 }`}
                 style={selectedDay === day.day_number ? { backgroundColor: '#ff497c', borderColor: '#ff497c' } : {}}
               >
-                Day {day.day_number}
+                <div className="text-center">
+                  <div>Day {day.day_number}</div>
+                  {day.destination_name && (
+                    <div className="text-xs opacity-75 mt-1">{day.destination_name}</div>
+                  )}
+                  {day.is_travel_day && (
+                    <div className="text-xs opacity-75 mt-1">Travel Day</div>
+                  )}
+                </div>
               </button>
             ))}
           </div>

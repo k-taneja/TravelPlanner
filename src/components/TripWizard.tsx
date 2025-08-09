@@ -197,7 +197,9 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
           date: dayPlan.date,
           total_cost: dayPlan.totalCost,
           total_duration: dayPlan.totalDuration,
-          destination_id: dayPlan.destinationId || null
+          destination_id: dayPlan.destinationId || null,
+          is_travel_day: dayPlan.isTravel || false,
+          travel_details: dayPlan.travelDetails || null
         });
 
         // Create activities for this day

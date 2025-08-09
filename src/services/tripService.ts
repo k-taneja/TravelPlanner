@@ -89,6 +89,9 @@ export const tripService = {
       .from('day_plans')
       .select(`
         *,
+        destinations!day_plans_destination_id_fkey (
+          name
+        ),
         activities (*)
       `)
       .eq('trip_id', tripId)
@@ -101,6 +104,7 @@ export const tripService = {
       destinations,
       dayPlans: dayPlans.map(dayPlan => ({
         ...dayPlan,
+        destination_name: dayPlan.destinations?.name || null,
         activities: dayPlan.activities.sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
       }))
     };

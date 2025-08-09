@@ -117,8 +117,12 @@ MULTI-DESTINATION TRIP REQUIREMENTS:
 - Primary Interests: ${interests.join(', ')}
 
 ${tripType === 'multi_fixed' ? 
+    }
+  }
   'FIXED ALLOCATION: Spend exactly the specified days at each destination.' :
   'FLEXIBLE ALLOCATION: Optimize time allocation based on destination attractions, user interests, and travel logistics.'
+}
+)
 }
 
 MULTI-DESTINATION PLANNING REQUIREMENTS:
