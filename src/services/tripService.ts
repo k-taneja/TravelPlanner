@@ -148,16 +148,4 @@ export const tripService = {
     if (error) throw error;
     return data;
   }
-  // Get archived trips
-  async getArchivedTrips(userId: string) {
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('archived', true)
-      .order('updated_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  }
 };
