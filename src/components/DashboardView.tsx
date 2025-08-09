@@ -415,45 +415,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <div>
                           <div className="flex items-center space-x-2 mb-2">
                             <p className="text-sm font-medium text-gray-700">{trip.dates}</p>
-                            {/* Archive and Delete buttons positioned next to date */}
-                            <div className="flex items-center space-x-1">
-                              {/* Archive Button - Only for completed trips */}
-                              {trip.status === 'completed' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleArchiveTrip(trip.id);
-                                  }}
-                                  disabled={archiveLoading === trip.id}
-                                  className={`p-1.5 rounded-lg transition-all duration-200 ${
-                                    archiveLoading === trip.id
-                                      ? 'bg-gray-200 cursor-not-allowed'
-                                      : 'bg-orange-100 hover:bg-orange-200 hover:scale-110'
-                                  }`}
-                                  title="Archive Trip"
-                                  aria-label="Archive completed trip"
-                                >
-                                  {archiveLoading === trip.id ? (
-                                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-400 border-t-transparent"></div>
-                                  ) : (
-                                    <Archive className="h-3 w-3 text-orange-600" />
-                                  )}
-                                </button>
-                              )}
-                              
-                              {/* Delete Button */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowDeleteConfirm(trip.id);
-                                }}
-                                className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-all duration-200 hover:scale-110"
-                                title="Delete Trip"
-                                aria-label="Delete trip permanently"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
                           </div>
                           <div className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" style={{ color: getStatusColor(trip.status) }} />
@@ -461,6 +422,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                               {trip.statusText}
                             </span>
                           </div>
+                        </div>
+                        
+                        {/* Enhanced Action Buttons - Positioned to the right with better spacing */}
+                        <div className="flex items-center space-x-3 ml-6">
+                          {/* Archive Button - Only for completed trips */}
+                          {trip.status === 'completed' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleArchiveTrip(trip.id);
+                              }}
+                              disabled={archiveLoading === trip.id}
+                              className={`min-w-[44px] min-h-[44px] p-3 rounded-xl transition-all duration-200 flex items-center justify-center ${
+                                archiveLoading === trip.id
+                                  ? 'bg-gray-200 cursor-not-allowed'
+                                  : 'bg-orange-100 hover:bg-orange-200 hover:scale-105 active:scale-95'
+                              }`}
+                              title="Archive Trip"
+                              aria-label="Archive completed trip"
+                            >
+                              {archiveLoading === trip.id ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
+                              ) : (
+                                <Archive className="h-5 w-5 text-orange-600" />
+                              )}
+                            </button>
+                          )}
+                          
+                          {/* Enhanced Delete Button - Mobile-optimized */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowDeleteConfirm(trip.id);
+                            }}
+                            className="min-w-[44px] min-h-[44px] p-3 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center shadow-sm hover:shadow-md"
+                            title="Delete Trip"
+                            aria-label="Delete trip permanently"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
                         </div>
                       </div>
                       
