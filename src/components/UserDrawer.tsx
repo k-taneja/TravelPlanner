@@ -92,7 +92,6 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
       return;
     }
     
-    setSe ttingsLoading(true);
     setSettingsLoading(true);
     
     try {
