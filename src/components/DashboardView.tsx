@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { tripService } from '../services/tripService';
 import { pdfService } from '../services/pdfService';
-import { Search, Bell, User, Plane, Calendar, MapPin, Wifi, Clock } from 'lucide-react';
+import { UserDrawer } from './UserDrawer';
+import { Search, Bell, User, Plane, Calendar, MapPin, Wifi, Clock, Archive, Trash2 } from 'lucide-react';
 
 interface DashboardViewProps {
   onPlanNewTrip: () => void;
@@ -11,6 +12,7 @@ interface DashboardViewProps {
   onSavedDestinations: () => void;
   onOfflineMode: () => void;
   onLogout: () => void;
+  onSettings?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -18,13 +20,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onViewItinerary,
   onSavedDestinations,
   onOfflineMode,
-  onLogout
+  onLogout,
+  onSettings
 }) => {
   const { user } = useAuth();
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
+  const [showUserDrawer, setShowUserDrawer] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   // Load user trips from database
   useEffect(() => {
@@ -60,14 +67,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           // Get destination image based on location
           const getDestinationImage = (destination: string) => {
             const images: { [key: string]: string } = {
-              'paris': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'tokyo': 'https://images.pexels.com/photos/248195/pexels-photo-248195.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'bali': 'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'rome': 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'barcelona': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'london': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'new york': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=400',
-              'dubai': 'https://images.pexels.com/photos/1470405/pexels-photo-1470405.jpeg?auto=compress&cs=tinysrgb&w=400'
+              // Iconic landmark images for major cities
+              'paris': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Eiffel Tower
+              'tokyo': 'https://images.pexels.com/photos/248195/pexels-photo-248195.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Tokyo skyline
+              'new york': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // NYC skyline
+              'london': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Big Ben/London
+              'rome': 'https://images.pexels.com/photos/2064827/pexels-photo-2064827.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Colosseum
+              'barcelona': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Sagrada Familia
+              'dubai': 'https://images.pexels.com/photos/1470405/pexels-photo-1470405.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Burj Khalifa
+              'bali': 'https://images.pexels.com/photos/2474690/pexels-photo-2474690.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Bali temple
+              'sydney': 'https://images.pexels.com/photos/783682/pexels-photo-783682.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Sydney Opera House
+              'mumbai': 'https://images.pexels.com/photos/1007426/pexels-photo-1007426.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Mumbai skyline
+              'delhi': 'https://images.pexels.com/photos/789750/pexels-photo-789750.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // India Gate
+              'singapore': 'https://images.pexels.com/photos/1134166/pexels-photo-1134166.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Marina Bay
+              'bangkok': 'https://images.pexels.com/photos/1007426/pexels-photo-1007426.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Bangkok temple
+              'istanbul': 'https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Hagia Sophia
+              'amsterdam': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Amsterdam canals
+              'berlin': 'https://images.pexels.com/photos/109629/pexels-photo-109629.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Brandenburg Gate
+              'madrid': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Madrid architecture
+              'lisbon': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Lisbon trams
+              'vienna': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Vienna palace
+              'prague': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300', // Prague castle
+              'budapest': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=500&h=300' // Budapest parliament
             };
             
             const key = destination.toLowerCase();
@@ -76,8 +97,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 return image;
               }
             }
-            // Default travel image
-            return 'https://images.pexels.com/photos/1008155/pexels-photo-1008155.jpeg?auto=compress&cs=tinysrgb&w=400';
+            // Default travel image with better quality
+            return 'https://images.pexels.com/photos/1008155/pexels-photo-1008155.jpeg?auto=compress&cs=tinysrgb&w=500&h=300';
           };
           
           return {
@@ -89,11 +110,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             image: getDestinationImage(trip.destination),
             description: `${trip.pace.charAt(0).toUpperCase() + trip.pace.slice(1)} paced adventure`,
             budget: trip.budget,
-            totalCost: trip.total_cost
+            totalCost: trip.total_cost,
+            archived: trip.archived || false
           };
         });
         
-        setTrips(transformedTrips);
+        // Filter out archived trips from main view
+        setTrips(transformedTrips.filter(trip => !trip.archived));
+        // Filter out archived trips from main view
+        setTrips(transformedTrips.filter(trip => !trip.archived));
       } catch (err) {
         console.error('Error loading trips:', err);
         setError('Failed to load trips');
@@ -212,6 +237,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
+  const handleArchiveTrip = async (tripId: string) => {
+    if (!user) return;
+    
+    setArchiveLoading(tripId);
+    try {
+      await tripService.archiveTrip(tripId);
+      // Remove from current trips list
+      setTrips(prev => prev.filter(trip => trip.id !== tripId));
+    } catch (error) {
+      console.error('Error archiving trip:', error);
+      alert('Failed to archive trip. Please try again.');
+    } finally {
+      setArchiveLoading(null);
+    }
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    if (!user) return;
+    
+    setDeleteLoading(tripId);
+    try {
+      await tripService.deleteTrip(tripId);
+      // Remove from current trips list
+      setTrips(prev => prev.filter(trip => trip.id !== tripId));
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      alert('Failed to delete trip. Please try again.');
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Fixed Top Navigation */}
@@ -229,9 +287,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Right Icons */}
             <div className="flex items-center space-x-3">
               <button 
-                onClick={onLogout}
+                onClick={() => setShowUserDrawer(true)}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors duration-200"
-                title="Sign Out"
+                title="Account Menu"
               >
                 <User className="h-5 w-5" />
               </button>
@@ -352,10 +410,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </div>
                     
                     {/* Card Footer */}
-                    <div className="p-4">
+                    <div className="p-6 bg-gradient-to-t from-gray-50 to-white">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-sm text-gray-600 mb-1">{trip.dates}</p>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <p className="text-sm font-medium text-gray-700">{trip.dates}</p>
+                          </div>
                           <div className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" style={{ color: getStatusColor(trip.status) }} />
                             <span className="text-sm font-medium" style={{ color: getStatusColor(trip.status) }}>
@@ -363,18 +423,58 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             </span>
                           </div>
                         </div>
+                        
+                        {/* Enhanced Action Buttons - Positioned to the right with better spacing */}
+                        <div className="flex items-center space-x-3 ml-6">
+                          {/* Archive Button - Only for completed trips */}
+                          {trip.status === 'completed' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleArchiveTrip(trip.id);
+                              }}
+                              disabled={archiveLoading === trip.id}
+                              className={`min-w-[44px] min-h-[44px] p-3 rounded-xl transition-all duration-200 flex items-center justify-center ${
+                                archiveLoading === trip.id
+                                  ? 'bg-gray-200 cursor-not-allowed'
+                                  : 'bg-orange-100 hover:bg-orange-200 hover:scale-105 active:scale-95'
+                              }`}
+                              title="Archive Trip"
+                              aria-label="Archive completed trip"
+                            >
+                              {archiveLoading === trip.id ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
+                              ) : (
+                                <Archive className="h-5 w-5 text-orange-600" />
+                              )}
+                            </button>
+                          )}
+                          
+                          {/* Enhanced Delete Button - Mobile-optimized */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowDeleteConfirm(trip.id);
+                            }}
+                            className="min-w-[44px] min-h-[44px] p-3 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center shadow-sm hover:shadow-md"
+                            title="Delete Trip"
+                            aria-label="Delete trip permanently"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
                       </div>
                       
                       {/* Quick Actions */}
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-3 mt-4">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onViewItinerary(trip.id.toString());
                           }}
-                          className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                        className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
                         >
-                          View Details
+                          <span className="flex items-center justify-center">View Details</span>
                         </button>
                         <button
                           onClick={(e) => {
@@ -383,15 +483,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           }}
                           disabled={pdfLoading === trip.id}
                           className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                            pdfLoading === trip.id
+                            pdfLoading === trip.id 
                               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                               : 'bg-blue-600 hover:bg-blue-700 text-white'
                           }`}
+                          title="Download PDF"
+                          aria-label="Download trip itinerary as PDF"
                         >
                           {pdfLoading === trip.id ? (
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
                           ) : (
-                            'PDF'
+                            <span className="flex items-center space-x-1">
+                              <span>PDF</span>
+                            </span>
                           )}
                         </button>
                       </div>
@@ -403,6 +507,117 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </section>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div 
+            className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Delete Trip</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to permanently delete this trip? All itinerary data will be lost.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteTrip(showDeleteConfirm)}
+                  disabled={deleteLoading === showDeleteConfirm}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {deleteLoading === showDeleteConfirm ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete Trip</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div 
+            className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Delete Trip</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to permanently delete this trip? All itinerary data will be lost.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteTrip(showDeleteConfirm)}
+                  disabled={deleteLoading === showDeleteConfirm}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {deleteLoading === showDeleteConfirm ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      <span>Delete Trip</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Drawer */}
+      <UserDrawer 
+        isOpen={showUserDrawer}
+        onClose={() => setShowUserDrawer(false)}
+        onSignOut={onLogout}
+        onSettings={onSettings}
+      />
     </div>
   );
 };

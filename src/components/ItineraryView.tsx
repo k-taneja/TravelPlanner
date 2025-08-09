@@ -4,6 +4,7 @@ import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Sh
 import { tripService } from '../services/tripService';
 import { useAuth } from '../hooks/useAuth';
 import { pdfService } from '../services/pdfService';
+import { UserDrawer } from './UserDrawer';
 import { Activity } from '../types';
 
 interface ItineraryViewProps {
@@ -20,6 +21,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   const [showWhyThis, setShowWhyThis] = useState<string | null>(null);
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [showLogoutDrawer, setShowLogoutDrawer] = useState(false);
+  const [showUserDrawer, setShowUserDrawer] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [tripData, setTripData] = useState<any>(null);
@@ -241,7 +243,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
             {/* Right Icons */}
             <div className="flex items-center space-x-3">
               <button 
-                onClick={() => setShowLogoutDrawer(true)}
+                onClick={() => setShowUserDrawer(true)}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors duration-200"
               >
                 <User className="h-5 w-5" />
@@ -497,45 +499,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
         </div>
       )}
 
-      {/* Logout Drawer */}
-      {showLogoutDrawer && (
-        <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-start justify-end p-4"
-          onClick={() => setShowLogoutDrawer(false)}
-        >
-          <div 
-            className="bg-slate-800 rounded-2xl p-4 w-64 mt-16 mr-4 border border-slate-600 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white">Account</h3>
-              <button
-                onClick={() => setShowLogoutDrawer(false)}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors duration-200"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="px-3 py-2 text-sm text-slate-300 border-b border-slate-700">
-                <div className="font-medium">Guest User</div>
-                <div className="text-xs text-slate-400">guest@travelai.app</div>
-              </div>
-              
-              <button
-                onClick={() => {
-                  setShowLogoutDrawer(false);
-                  onBack(); // This will navigate to login screen
-                }}
-                className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-slate-700 rounded-lg transition-colors duration-200"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* User Drawer */}
+      <UserDrawer 
+        isOpen={showUserDrawer}
+        onClose={() => setShowUserDrawer(false)}
+        onSignOut={() => {
+          setShowUserDrawer(false);
+          onBack(); // Navigate to login screen
+        }}
+        onSettings={() => {
+          setShowUserDrawer(false);
+          // For now, settings will open in modal from UserDrawer
+          // In future, this could navigate to settings page
+        }}
+      />
     </div>
   );
 };

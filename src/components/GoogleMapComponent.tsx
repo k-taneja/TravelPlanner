@@ -31,15 +31,7 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   useEffect(() => {
     const initMap = async () => {
       try {
-        // Skip Google Maps initialization if API key is not properly configured
-        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-        if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-          console.warn('Google Maps API key not configured, showing fallback UI');
-          setError('Google Maps not available - API key not configured');
-          setLoading(false);
-          return;
-        }
-
+        console.log('Initializing Google Maps component...');
         const google = await initializeGoogleMaps();
         
         if (!mapRef.current) return;
@@ -52,15 +44,30 @@ export const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               featureType: 'poi',
               elementType: 'labels',
               stylers: [{ visibility: 'off' }]
+            },
+            {
+              featureType: 'transit',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }]
             }
-          ]
+          ],
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false
         });
 
         setMap(mapInstance);
+        console.log('Google Maps initialized successfully');
         setLoading(false);
       } catch (err) {
-        console.error('Error initializing map:', err);
-        setError('Google Maps not available - please configure API key');
+        console.error('Error initializing Google Maps:', err);
+        
+        // Provide user-friendly error messages
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Google Maps failed to load. Please check your internet connection and try again.');
+        }
         setLoading(false);
       }
     };

@@ -10,6 +10,7 @@ export interface TripPlanRequest {
   pace: 'relaxed' | 'balanced' | 'fast';
   interests: string[];
   from?: string;
+  userPreferences?: any;
 }
 
 export interface GeneratedActivity {

@@ -7,7 +7,7 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { ItineraryView } from './components/ItineraryView';
 import { MapView } from './components/MapView';
 import { ShareView } from './components/ShareView';
-import { SettingsView } from './components/SettingsView';
+import { SettingsPage } from './components/SettingsPage';
 import { OfflineView } from './components/OfflineView';
 import { BottomNavigation } from './components/BottomNavigation';
 import { ResetPasswordView } from './components/ResetPasswordView';
@@ -135,6 +135,10 @@ function App() {
     setCurrentScreen(screen);
   };
 
+  const handleOpenSettings = () => {
+    setCurrentScreen('settings');
+  };
+
   // For preview - show itinerary directly
   // Commented out for login page preview
   // if (currentScreen === 'login') {
@@ -176,6 +180,7 @@ function App() {
             onSavedDestinations={handleSavedDestinations}
             onOfflineMode={handleOfflineMode}
             onLogout={handleLogout}
+            onSettings={handleOpenSettings}
           />
         );
       
@@ -208,7 +213,7 @@ function App() {
         return <ShareView onBack={handleBackToItinerary} />;
       
       case 'settings':
-        return <SettingsView onBack={handleBackToItinerary} />;
+        return <SettingsPage onBack={handleBackToItinerary} />;
       
       case 'offline':
         return <OfflineView onBack={handleBackToItinerary} />;

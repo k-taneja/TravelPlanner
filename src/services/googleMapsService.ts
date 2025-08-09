@@ -1,44 +1,17 @@
 import { Loader } from '@googlemaps/js-api-loader';
-import { supabase } from '../lib/supabase';
 
-// Google Maps API key is configured in Supabase Edge Functions
+// Google Maps API key configuration with proper fallbacks
 
 let googleMapsLoader: Loader | null = null;
 let isLoaded = false;
-let cachedApiKey: string | null = null;
 
 export const initializeGoogleMaps = async () => {
-  // Try to get API key from Supabase Edge Function
-  let apiKey: string;
+  // Get API key from environment variable (configured in Bolt.new)
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   
-  try {
-    // Use cached key if available
-    if (cachedApiKey) {
-      apiKey = cachedApiKey;
-    } else {
-      // Get API key from Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('google-maps-config');
-      
-      if (error || !data?.available) {
-        // Fallback to environment variable
-        apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-        if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-          console.warn('Google Maps API key not available, maps will not function');
-          throw new Error('Google Maps API key not configured');
-        }
-      } else {
-        apiKey = data.apiKey;
-        cachedApiKey = apiKey; // Cache for future use
-      }
-    }
-  } catch (error) {
-    console.error('Error getting Google Maps config:', error);
-    // Final fallback to environment variable
-    apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-      console.warn('Google Maps API key not available, maps will not function');
-      throw new Error('Google Maps API key not configured');
-    }
+  if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+    console.error('Google Maps API key not configured in environment variables');
+    throw new Error('Google Maps API key not configured. Please set VITE_GOOGLE_MAPS_API_KEY in your environment variables.');
   }
 
   if (isLoaded) {
@@ -49,17 +22,34 @@ export const initializeGoogleMaps = async () => {
     googleMapsLoader = new Loader({
       apiKey: apiKey,
       version: 'weekly',
-      libraries: ['places', 'geometry']
+      libraries: ['places', 'geometry'],
+      // Add additional configuration for better error handling
+      language: 'en',
+      region: 'US'
     });
   }
 
   try {
+    console.log('Loading Google Maps API...');
     const google = await googleMapsLoader.load();
     isLoaded = true;
+    console.log('Google Maps API loaded successfully');
     return google;
   } catch (error) {
-    console.error('Error loading Google Maps:', error);
-    throw error;
+    console.error('Error loading Google Maps API:', error);
+    
+    // Provide more specific error information
+    if (error instanceof Error) {
+      if (error.message.includes('InvalidKeyMapError')) {
+        throw new Error('Invalid Google Maps API key. Please check your API key configuration.');
+      } else if (error.message.includes('RefererNotAllowedMapError')) {
+        throw new Error('Domain not allowed for this API key. Please check your API key restrictions.');
+      } else if (error.message.includes('QuotaExceededError')) {
+        throw new Error('Google Maps API quota exceeded. Please check your usage limits.');
+      }
+    }
+    
+    throw new Error(`Google Maps API failed to load: ${error}`);
   }
 };
 
