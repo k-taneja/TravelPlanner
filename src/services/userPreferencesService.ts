@@ -22,24 +22,24 @@ export const userPreferencesService = {
         .from('user_preferences')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No preferences found, return default values
-          return {
-            user_id: userId,
-            start_time: '09:00',
-            end_time: '21:00',
-            food_preferences: 'all',
-            dietary_restrictions: '',
-            travel_style: 'standard',
-            accommodation_type: 'hotel',
-            budget_preference: 'balanced',
-          };
-          travel_preferences: ''
-        }
         throw error;
+      }
+
+      if (!data) {
+        // No preferences found, return default values
+        return {
+          user_id: userId,
+          start_time: '09:00',
+          end_time: '21:00',
+          food_preferences: 'all',
+          dietary_restrictions: '',
+          travel_style: 'standard',
+          budget_preference: 'balanced',
+          travel_preferences: ''
+        };
       }
 
       return data;
