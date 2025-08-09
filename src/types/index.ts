@@ -49,5 +49,5 @@ export type AppScreen =
   | 'itinerary'
   | 'map'
   | 'share'
-  | 'settings'
+  | 'settings' 
   | 'offline';

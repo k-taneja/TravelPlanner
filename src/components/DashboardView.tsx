@@ -12,6 +12,7 @@ interface DashboardViewProps {
   onSavedDestinations: () => void;
   onOfflineMode: () => void;
   onLogout: () => void;
+  onSettings?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -19,7 +20,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onViewItinerary,
   onSavedDestinations,
   onOfflineMode,
-  onLogout
+  onLogout,
+  onSettings
 }) => {
   const { user } = useAuth();
   const [trips, setTrips] = useState<any[]>([]);
@@ -613,6 +615,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         isOpen={showUserDrawer}
         onClose={() => setShowUserDrawer(false)}
         onSignOut={onLogout}
+        onSettings={onSettings}
       />
     </div>
   );

@@ -6,6 +6,7 @@ interface UserDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSignOut: () => void;
+  onSettings?: () => void;
 }
 
 interface UserSettings {
@@ -17,7 +18,7 @@ interface UserSettings {
   accommodationType?: string;
 }
 
-export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignOut }) => {
+export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignOut, onSettings }) => {
   const { user } = useAuth();
   const [showArchivedTrips, setShowArchivedTrips] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -64,7 +65,13 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
         setShowArchivedTrips(true);
         break;
       case 'settings':
-        setShowSettings(true);
+        onClose(); // Close drawer first
+        if (onSettings) {
+          onSettings();
+        } else {
+          // Fallback to modal if navigation not implemented
+          setShowSettings(true);
+        }
         break;
       case 'signout':
         onSignOut();

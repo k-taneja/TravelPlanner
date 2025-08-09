@@ -507,6 +507,11 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
           setShowUserDrawer(false);
           onBack(); // Navigate to login screen
         }}
+        onSettings={() => {
+          setShowUserDrawer(false);
+          // For now, settings will open in modal from UserDrawer
+          // In future, this could navigate to settings page
+        }}
       />
     </div>
   );
