@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Share2, ArrowRight, MessageCircle, Copy, Download, X } from 'lucide-react';
 import { tripService } from '../services/tripService';
 import { useAuth } from '../hooks/useAuth';
+import { pdfService } from '../services/pdfService';
 import { Activity } from '../types';
 
 interface ItineraryViewProps {
@@ -20,6 +21,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [showLogoutDrawer, setShowLogoutDrawer] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [tripData, setTripData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,8 +144,22 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   };
 
   const downloadPDF = () => {
-    alert('PDF download would start here in a real app');
+    handleDownloadPDF();
     setShowSharePopup(false);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!tripData) return;
+
+    setPdfLoading(true);
+    try {
+      await pdfService.generateTripPDF(tripData);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -439,10 +455,24 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
               {/* Download PDF */}
               <button
                 onClick={downloadPDF}
-                className="w-full p-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl flex items-center justify-center space-x-3 transition-all duration-200 hover:scale-[0.98] border border-slate-600"
+                disabled={pdfLoading}
+                className={`w-full p-4 rounded-xl flex items-center justify-center space-x-3 transition-all duration-200 hover:scale-[0.98] border border-slate-600 ${
+                  pdfLoading 
+                    ? 'bg-slate-600 cursor-not-allowed' 
+                    : 'bg-slate-700 hover:bg-slate-600'
+                } text-white`}
               >
-                <Download className="h-5 w-5" />
-                <span className="font-semibold">Download PDF</span>
+                {pdfLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span className="font-semibold">Generating PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-5 w-5" />
+                    <span className="font-semibold">Download PDF</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
