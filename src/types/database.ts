@@ -490,3 +490,92 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
     const isLastDestination = destIndex === destinations.length - 1
     
     // Calculate days for this destination
+    const daysForDestination = request.tripType === 'multi_fixed' ? destination.days : Math.floor(totalDays / destinations.length)
+    
+    // Add destination days
+    for (let dayInDest = 0; dayInDest < daysForDestination; dayInDest++) {
+      const mockActivities: Activity[] = [
+        {
+          time: '09:00',
+          name: `Explore ${destination.name}`,
+          type: 'attraction',
+          description: `Discover the main attractions of ${destination.name}`,
+          duration: 120,
+          cost: Math.floor(request.budget * 0.1 / totalDays),
+          location: {
+            lat: 28.6139 + Math.random() * 0.1,
+            lng: 77.2090 + Math.random() * 0.1,
+            address: `Main Area, ${destination.name}`
+          },
+          whyThis: `Perfect introduction to ${destination.name} based on your interests: ${request.interests.join(', ')}`
+        },
+        {
+          time: '12:30',
+          name: `Local Cuisine in ${destination.name}`,
+          type: 'food',
+          description: `Authentic local food experience in ${destination.name}`,
+          duration: 90,
+          cost: Math.floor(request.budget * 0.05 / totalDays),
+          location: {
+            lat: 28.6139 + Math.random() * 0.1,
+            lng: 77.2090 + Math.random() * 0.1,
+            address: `Food District, ${destination.name}`
+          },
+          whyThis: 'Experience local flavors and culinary traditions'
+        }
+      ]
+      
+      const totalCost = mockActivities.reduce((sum, activity) => sum + activity.cost, 0)
+      const totalDuration = mockActivities.reduce((sum, activity) => sum + activity.duration, 0)
+      
+      itinerary.push({
+        day: currentDay,
+        date: currentDate.toISOString().split('T')[0],
+        destinationId: destination.id,
+        destinationName: destination.name,
+        isTravel: false,
+        activities: mockActivities,
+        totalCost,
+        totalDuration
+      })
+      
+      currentDay++
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // Add travel day if not the last destination
+    if (!isLastDestination && currentDay <= totalDays) {
+      const nextDestination = destinations[destIndex + 1]
+      
+      itinerary.push({
+        day: currentDay,
+        date: currentDate.toISOString().split('T')[0],
+        destinationId: nextDestination.id,
+        destinationName: nextDestination.name,
+        isTravel: true,
+        travelDetails: `Travel from ${destination.name} to ${nextDestination.name}`,
+        activities: [{
+          time: '10:00',
+          name: `Travel to ${nextDestination.name}`,
+          type: 'transport',
+          description: `Journey from ${destination.name} to ${nextDestination.name}`,
+          duration: 240,
+          cost: Math.floor(request.budget * 0.1 / destinations.length),
+          location: {
+            lat: 28.6139,
+            lng: 77.2090,
+            address: `Transport Hub, ${destination.name}`
+          },
+          whyThis: 'Efficient travel between destinations'
+        }],
+        totalCost: Math.floor(request.budget * 0.1 / destinations.length),
+        totalDuration: 240
+      })
+      
+      currentDay++
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+  }
+  
+  return itinerary
+}
