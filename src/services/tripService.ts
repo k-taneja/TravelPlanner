@@ -7,6 +7,10 @@ type DayPlan = Database['public']['Tables']['day_plans']['Row'];
 type DayPlanInsert = Database['public']['Tables']['day_plans']['Insert'];
 type Activity = Database['public']['Tables']['activities']['Row'];
 type ActivityInsert = Database['public']['Tables']['activities']['Insert'];
+type Destination = Database['public']['Tables']['destinations']['Row'];
+type DestinationInsert = Database['public']['Tables']['destinations']['Insert'];
+type TripSegment = Database['public']['Tables']['trip_segments']['Row'];
+type TripSegmentInsert = Database['public']['Tables']['trip_segments']['Insert'];
 
 export const tripService = {
   // Create a new trip
@@ -21,12 +25,60 @@ export const tripService = {
     return data;
   },
 
+  // Create a destination
+  async createDestination(destinationData: DestinationInsert) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .insert(destinationData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Create a trip segment
+  async createTripSegment(segmentData: TripSegmentInsert) {
+    const { data, error } = await supabase
+      .from('trip_segments')
+      .insert(segmentData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Create a destination
+  async createDestination(destinationData: DestinationInsert) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .insert(destinationData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Create a trip segment
+  async createTripSegment(segmentData: TripSegmentInsert) {
+    const { data, error } = await supabase
+      .from('trip_segments')
+      .insert(segmentData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   // Get user's trips
   async getUserTrips(userId: string) {
     const { data, error } = await supabase
       .from('trips')
       .select('*')
       .eq('user_id', userId)
+      .eq('archived', false)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
@@ -43,6 +95,32 @@ export const tripService = {
 
     if (tripError) throw tripError;
 
+    // Get destinations if multi-destination trip
+    let destinations = [];
+    if (trip.is_multi_destination) {
+      const { data: destData, error: destError } = await supabase
+        .from('destinations')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('order_index');
+      
+      if (destError) throw destError;
+      destinations = destData || [];
+    }
+
+    // Get destinations if multi-destination trip
+    let destinations = [];
+    if (trip.is_multi_destination) {
+      const { data: destData, error: destError } = await supabase
+        .from('destinations')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('order_index');
+      
+      if (destError) throw destError;
+      destinations = destData || [];
+    }
+
     const { data: dayPlans, error: dayPlansError } = await supabase
       .from('day_plans')
       .select(`
@@ -56,6 +134,8 @@ export const tripService = {
 
     return {
       ...trip,
+      destinations,
+      destinations,
       dayPlans: dayPlans.map(dayPlan => ({
         ...dayPlan,
         activities: dayPlan.activities.sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
@@ -63,6 +143,55 @@ export const tripService = {
     };
   },
 
+  // Get destinations for a trip
+  async getTripDestinations(tripId: string) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('order_index');
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Update destination
+  async updateDestination(destinationId: string, updates: Partial<Destination>) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .update(updates)
+      .eq('id', destinationId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Get destinations for a trip
+  async getTripDestinations(tripId: string) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('order_index');
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Update destination
+  async updateDestination(destinationId: string, updates: Partial<Destination>) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .update(updates)
+      .eq('id', destinationId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   // Create day plan
   async createDayPlan(dayPlanData: DayPlanInsert) {
     const { data, error } = await supabase

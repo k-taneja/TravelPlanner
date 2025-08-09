@@ -26,6 +26,10 @@ interface TripRequest {
   pace: 'relaxed' | 'balanced' | 'fast'
   interests: string[]
   from?: string
+  userPreferences?: any
+  tripType?: 'single' | 'multi_fixed' | 'multi_flexible'
+  destinations?: Array<{ id: string; name: string; days: number }>
+  isMultiDestination?: boolean
 }
 
 interface Activity {
@@ -49,6 +53,10 @@ interface DayPlan {
   activities: Activity[]
   totalCost: number
   totalDuration: number
+  destinationId?: string
+  destinationName?: string
+  isTravel?: boolean
+  travelDetails?: string
 }
 
 serve(async (req) => {
@@ -57,7 +65,19 @@ serve(async (req) => {
   }
 
   try {
-    const { destination, startDate, endDate, budget, pace, interests, from } = await req.json() as TripRequest
+    const { 
+      destination, 
+      startDate, 
+      endDate, 
+      budget, 
+      pace, 
+      interests, 
+      from,
+      userPreferences,
+      tripType = 'single',
+      destinations,
+      isMultiDestination = false
+    } = await req.json() as TripRequest
 
     // Get OpenRouter API key from Supabase secrets
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY')
@@ -70,30 +90,6 @@ serve(async (req) => {
     const end = new Date(endDate)
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
-    // Get user preferences from database (if available)
-    let userPreferences = null
-    try {
-      // Get Supabase client for database queries
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      
-      const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-
-      const { data: preferences } = await supabaseClient
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', from || 'anonymous') // Use from field or anonymous
-        .single()
-      userPreferences = preferences
-    } catch (error) {
-      console.log('No user preferences found, using defaults')
-    }
-
     // Define activity counts based on pace
     const paceConfig = {
       relaxed: { activities: '1-2', restaurants: 1, description: 'leisurely exploration with plenty of rest time' },
@@ -103,8 +99,60 @@ serve(async (req) => {
 
     const currentPace = paceConfig[pace] || paceConfig.balanced
 
-    // Create comprehensive prompt for AI
-    const prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}.
+    // Create comprehensive prompt for AI based on trip type
+    let prompt = ''
+    
+    if (isMultiDestination && destinations) {
+      const destinationList = destinations.map(d => `${d.name} (${tripType === 'multi_fixed' ? d.days + ' days' : 'flexible duration'})`).join(', ')
+      
+      prompt = `You are an expert travel planner creating a personalized ${days}-day multi-destination itinerary.
+
+MULTI-DESTINATION TRIP REQUIREMENTS:
+- Trip Type: ${tripType.toUpperCase()}
+- Destinations: ${destinationList}
+- Total Duration: ${days} days (${startDate} to ${endDate})
+- Starting Point: ${from || 'Not specified'}
+- Total Budget: ₹${budget.toLocaleString('en-IN')} (approximately $${Math.round(budget/83)})
+- Travel Pace: ${pace.toUpperCase()} - ${currentPace.description}
+- Primary Interests: ${interests.join(', ')}
+
+${tripType === 'multi_fixed' ? 
+  'FIXED ALLOCATION: Spend exactly the specified days at each destination.' :
+  'FLEXIBLE ALLOCATION: Optimize time allocation based on destination attractions, user interests, and travel logistics.'
+}
+
+MULTI-DESTINATION PLANNING REQUIREMENTS:
+1. Plan activities for each destination based on allocated time
+2. Include travel days between destinations with realistic transport options
+3. Consider travel time, costs, and logistics between cities
+4. Optimize the route to minimize backtracking and travel time
+5. Allocate budget across destinations and transport
+6. Include rest time after long travel days
+7. Suggest best transport methods between destinations (flight, train, bus, car)
+8. Account for check-in/check-out times and luggage management
+
+DESTINATION-SPECIFIC REQUIREMENTS:
+${destinations.map((dest, index) => `
+${index + 1}. ${dest.name}:
+   - ${tripType === 'multi_fixed' ? `Fixed: ${dest.days} days` : 'Flexible duration (AI optimized)'}
+   - Focus on attractions matching interests: ${interests.join(', ')}
+   - Include local cuisine and cultural experiences
+   - Plan ${currentPace.activities} activities per day
+`).join('')}
+
+TRAVEL LOGISTICS:
+- Research realistic travel times between destinations
+- Suggest most efficient transport methods
+- Include buffer time for delays and rest
+- Consider luggage storage options during travel days
+- Plan arrival/departure logistics for each destination`
+    } else {
+      // Single destination prompt (existing logic)
+      prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}.`
+    }
+
+    // Continue with common prompt sections
+    prompt += `
 
 TRIP REQUIREMENTS:
 - Destination: ${destination}
@@ -172,12 +220,17 @@ TIMING AND LOGISTICS:
 - Include rest periods for ${pace} pace travelers
 - Suggest optimal visiting times to avoid crowds
 - Consider local transportation options and costs
+
 RESPONSE FORMAT (JSON only, no markdown):
 {
   "itinerary": [
     {
       "day": 1,
       "date": "YYYY-MM-DD",
+      ${isMultiDestination ? '"destinationId": "destination_id",' : ''}
+      ${isMultiDestination ? '"destinationName": "Destination Name",' : ''}
+      ${isMultiDestination ? '"isTravel": false,' : ''}
+      ${isMultiDestination ? '"travelDetails": "Travel information if applicable",' : ''}
       "activities": [
         {
           "time": "09:00",
@@ -213,7 +266,7 @@ RESPONSE FORMAT (JSON only, no markdown):
         messages: [
           {
             role: 'system',
-            content: 'You are an expert travel planner. Create detailed, realistic itineraries with accurate locations, costs in Indian Rupees, and explanations. Always respond with valid JSON only.'
+            content: `You are an expert travel planner specializing in ${isMultiDestination ? 'multi-destination' : 'single-destination'} trips. Create detailed, realistic itineraries with accurate locations, costs in Indian Rupees, and explanations. Always respond with valid JSON only.`
           },
           {
             role: 'user',
@@ -221,7 +274,7 @@ RESPONSE FORMAT (JSON only, no markdown):
           }
         ],
         temperature: 0.7,
-        max_tokens: 4000
+        max_tokens: isMultiDestination ? 6000 : 4000
       })
     })
 
@@ -325,7 +378,8 @@ RESPONSE FORMAT (JSON only, no markdown):
     console.error('Error generating itinerary:', error)
     
     // Return fallback mock data for development
-    const mockItinerary = generateMockItinerary(await req.json())
+    const requestData = await req.json()
+    const mockItinerary = generateMockItinerary(requestData)
     
     return new Response(
       JSON.stringify({ 
@@ -346,6 +400,12 @@ function generateMockItinerary(request: TripRequest): DayPlan[] {
   const endDate = new Date(request.endDate)
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
   
+  // Handle multi-destination trips
+  if (request.isMultiDestination && request.destinations) {
+    return generateMultiDestinationMockItinerary(request, days)
+  }
+  
+  // Single destination logic (existing)
   const mockActivities: Activity[] = [
     {
       time: '09:00',
@@ -413,6 +473,130 @@ function generateMockItinerary(request: TripRequest): DayPlan[] {
       totalCost,
       totalDuration
     })
+  }
+  
+  return itinerary
+}
+
+// Multi-destination mock itinerary generator
+function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: number): DayPlan[] {
+  const startDate = new Date(request.startDate)
+  const destinations = request.destinations!
+  const itinerary: DayPlan[] = []
+  
+  let currentDay = 1
+  let currentDate = new Date(startDate)
+  
+  for (let destIndex = 0; destIndex < destinations.length; destIndex++) {
+    const destination = destinations[destIndex]
+    const isLastDestination = destIndex === destinations.length - 1
+    
+    // Calculate days for this destination
+    let daysForDestination = destination.days
+    if (request.tripType === 'multi_flexible') {
+      // AI would optimize this, for mock we'll distribute evenly
+      daysForDestination = Math.floor(totalDays / destinations.length)
+      if (destIndex < totalDays % destinations.length) {
+        daysForDestination += 1
+      }
+    }
+    
+    // Generate activities for each day in this destination
+    for (let dayInDest = 0; dayInDest < daysForDestination; dayInDest++) {
+      const mockActivities: Activity[] = [
+        {
+          time: '09:00',
+          name: `Explore ${destination.name}`,
+          type: 'attraction',
+          description: `Discover the main attractions of ${destination.name}`,
+          duration: 120,
+          cost: Math.floor(request.budget * 0.08),
+          location: {
+            lat: 28.6139 + Math.random() * 0.1,
+            lng: 77.2090 + Math.random() * 0.1,
+            address: `Main Area, ${destination.name}`
+          },
+          whyThis: `Perfect introduction to ${destination.name} based on your interests`
+        },
+        {
+          time: '12:30',
+          name: `Local Cuisine in ${destination.name}`,
+          type: 'food',
+          description: `Authentic local food experience in ${destination.name}`,
+          duration: 90,
+          cost: Math.floor(request.budget * 0.04),
+          location: {
+            lat: 28.6139 + Math.random() * 0.1,
+            lng: 77.2090 + Math.random() * 0.1,
+            address: `Food District, ${destination.name}`
+          },
+          whyThis: 'Experience local flavors and culinary traditions'
+        },
+        {
+          time: '15:00',
+          name: `Cultural Sites in ${destination.name}`,
+          type: 'history',
+          description: `Historical and cultural landmarks of ${destination.name}`,
+          duration: 150,
+          cost: Math.floor(request.budget * 0.06),
+          location: {
+            lat: 28.6139 + Math.random() * 0.1,
+            lng: 77.2090 + Math.random() * 0.1,
+            address: `Heritage Area, ${destination.name}`
+          },
+          whyThis: 'Rich history and culture matching your interests'
+        }
+      ]
+      
+      const totalCost = mockActivities.reduce((sum, activity) => sum + activity.cost, 0)
+      const totalDuration = mockActivities.reduce((sum, activity) => sum + activity.duration, 0)
+      
+      itinerary.push({
+        day: currentDay,
+        date: currentDate.toISOString().split('T')[0],
+        activities: mockActivities,
+        totalCost,
+        totalDuration,
+        destinationId: destination.id,
+        destinationName: destination.name
+      })
+      
+      currentDay++
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // Add travel day between destinations (except for the last one)
+    if (!isLastDestination && currentDay <= totalDays) {
+      const nextDestination = destinations[destIndex + 1]
+      
+      itinerary.push({
+        day: currentDay,
+        date: currentDate.toISOString().split('T')[0],
+        activities: [
+          {
+            time: '10:00',
+            name: `Travel to ${nextDestination.name}`,
+            type: 'transport',
+            description: `Journey from ${destination.name} to ${nextDestination.name}`,
+            duration: 240, // 4 hours travel time
+            cost: Math.floor(request.budget * 0.1),
+            location: {
+              lat: 28.6139,
+              lng: 77.2090,
+              address: `En route to ${nextDestination.name}`
+            },
+            whyThis: 'Efficient travel between destinations with time for rest'
+          }
+        ],
+        totalCost: Math.floor(request.budget * 0.1),
+        totalDuration: 240,
+        isTravel: true,
+        travelDetails: `Travel day from ${destination.name} to ${nextDestination.name}`
+      })
+      
+      currentDay++
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
   }
   
   return itinerary
