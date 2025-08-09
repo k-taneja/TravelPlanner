@@ -64,7 +64,10 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let requestBody: TripRequest
+
   try {
+    requestBody = await req.json()
     const { 
       destination, 
       startDate, 
@@ -77,7 +80,7 @@ serve(async (req) => {
       tripType = 'single',
       destinations,
       isMultiDestination = false
-    } = await req.json() as TripRequest
+    } = requestBody
 
     // Get OpenRouter API key from Supabase secrets
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY')
@@ -523,8 +526,7 @@ CRITICAL REQUIREMENTS:
     console.error('Error generating itinerary:', error)
     
     // Return fallback mock data for development
-    const requestData = await req.json()
-    const mockItinerary = generateMockItinerary(requestData)
+    const mockItinerary = generateMockItinerary(requestBody)
     
     return new Response(
       JSON.stringify({ 
