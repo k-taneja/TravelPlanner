@@ -207,8 +207,11 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
 
       {/* Archived Trips Modal */}
       {showArchivedTrips && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden border border-slate-600 shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <div 
+            className="bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden border border-slate-600 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-700">
               <h3 className="text-xl font-bold text-white">Archived Trips</h3>
@@ -263,8 +266,11 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-slate-600 shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <div 
+            className="bg-slate-800 rounded-2xl w-full max-w-md border border-slate-600 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-700">
               <h3 className="text-xl font-bold text-white">Settings</h3>
