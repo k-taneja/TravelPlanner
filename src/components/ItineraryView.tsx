@@ -945,14 +945,25 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                       <select
                         value={newActivity.type}
                         onChange={(e) => setNewActivity(prev => ({ ...prev, type: e.target.value }))}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       >
-                        <option value="attraction">Attraction</option>
-                        <option value="food">Food</option>
-                        <option value="history">History</option>
-                        <option value="nature">Nature</option>
-                        <option value="shopping">Shopping</option>
-                        <option value="transport">Transport</option>
+                        <option value="attraction">🏛️ Attraction & Sightseeing</option>
+                        <option value="food">🍽️ Food & Dining</option>
+                        <option value="transport">🚗 Local Transport</option>
+                        <option value="flight">✈️ Flight & Air Travel</option>
+                        <option value="accommodation">🏨 Hotel & Check-in/out</option>
+                        <option value="shopping">🛍️ Shopping & Markets</option>
+                        <option value="nature">🌿 Nature & Outdoors</option>
+                        <option value="history">🏛️ History & Culture</option>
+                        <option value="entertainment">🎭 Entertainment & Shows</option>
+                        <option value="wellness">💆 Wellness & Spa</option>
+                        <option value="sports">⚽ Sports & Activities</option>
+                        <option value="business">💼 Business & Meetings</option>
+                        <option value="social">👥 Social & Friends</option>
+                        <option value="personal">⏰ Personal Time</option>
+                        <option value="rest">😴 Rest & Downtime</option>
+                        <option value="transit">🚌 Transit & Travel Time</option>
+                        <option value="other">📝 Other</option>
                       </select>
                     </div>
 

@@ -170,9 +170,22 @@ RESPONSE FORMAT (JSON only):
     
     // Normalize activity types
     const validActivityTypes = ['attraction', 'food', 'transport', 'shopping', 'nature', 'history']
+    
+    // Enhanced type mapping for all activity types
     const typeMapping: { [key: string]: string } = {
       'sightseeing': 'attraction',
       'museum': 'attraction',
+      'flight': 'transport',
+      'accommodation': 'attraction',
+      'entertainment': 'attraction',
+      'wellness': 'attraction',
+      'sports': 'nature',
+      'business': 'attraction',
+      'social': 'attraction',
+      'personal': 'attraction',
+      'rest': 'attraction',
+      'transit': 'transport',
+      'other': 'attraction',
       'restaurant': 'food',
       'dining': 'food',
       'market': 'shopping',
