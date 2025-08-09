@@ -110,7 +110,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             budget: trip.budget,
             totalCost: trip.total_cost,
             archived: trip.archived || false
-            archived: trip.archived || false
           };
         });
         
