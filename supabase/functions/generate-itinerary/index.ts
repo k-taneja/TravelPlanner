@@ -131,6 +131,15 @@ MULTI-DESTINATION PLANNING REQUIREMENTS:
 7. Suggest best transport methods between destinations (flight, train, bus, car)
 8. Account for check-in/check-out times and luggage management
 
+ROUTE OPTIMIZATION REQUIREMENTS (for flexible trips):
+- Analyze geographical proximity of destinations
+- Minimize total travel time and costs
+- Consider seasonal factors and weather patterns
+- Optimize based on user interests (spend more time where interests align)
+- Factor in transportation availability and frequency
+- Suggest logical travel flow to reduce backtracking
+- Balance travel efficiency with experience quality
+
 DESTINATION-SPECIFIC REQUIREMENTS:
 ${destinations.map((dest, index) => `
 ${index + 1}. ${dest.name}:
@@ -140,12 +149,22 @@ ${index + 1}. ${dest.name}:
    - Plan ${currentPace.activities} activities per day
 `).join('')}
 
+${tripType === 'multi_flexible' ? `
+FLEXIBLE ALLOCATION OPTIMIZATION:
+- Analyze each destination's attraction density and variety
+- Allocate more days to destinations with higher interest alignment
+- Consider seasonal factors (weather, festivals, peak seasons)
+- Factor in travel fatigue and optimal trip flow
+- Suggest 2-5 days per destination based on available activities
+- Ensure minimum 2 days per destination for meaningful experience
+- Optimize total route for cost and time efficiency
+` : ''}
+
 TRAVEL LOGISTICS:
 - Research realistic travel times between destinations
 - Suggest most efficient transport methods
 - Include buffer time for delays and rest
 - Consider luggage storage options during travel days
-- Plan arrival/departure logistics for each destination`
     } else {
       // Single destination prompt (existing logic)
       prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}.`
@@ -502,22 +521,32 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
   let currentDay = 1
   let currentDate = new Date(startDate)
   
-  for (let destIndex = 0; destIndex < destinations.length; destIndex++) {
-    const destination = destinations[destIndex]
+  // For flexible trips, optimize the route and allocate days intelligently
+  let optimizedDestinations = [...destinations]
+  if (request.tripType === 'multi_flexible') {
+    // Simple optimization: allocate days based on destination importance
+    const remainingDays = totalDays - destinations.length // Reserve 1 travel day between each destination
+    const baseDaysPerDestination = Math.floor(remainingDays / destinations.length)
+    const extraDays = remainingDays % destinations.length
+    
+    optimizedDestinations = destinations.map((dest, index) => ({
+      ...dest,
+      days: baseDaysPerDestination + (index < extraDays ? 1 : 0) + 2 // +2 for minimum meaningful stay
+    }))
+  }
+  
+  for (let destIndex = 0; destIndex < optimizedDestinations.length; destIndex++) {
+    const destination = optimizedDestinations[destIndex]
     const isLastDestination = destIndex === destinations.length - 1
     
     // Calculate days for this destination
     let daysForDestination = destination.days
-    if (request.tripType === 'multi_flexible') {
-      // AI would optimize this, for mock we'll distribute evenly
-      daysForDestination = Math.floor(totalDays / destinations.length)
-      if (destIndex < totalDays % destinations.length) {
-        daysForDestination += 1
-      }
-    }
     
     // Generate activities for each day in this destination
     for (let dayInDest = 0; dayInDest < daysForDestination; dayInDest++) {
+      // Ensure we don't exceed total trip days
+      if (currentDay > totalDays) break
+      
       const mockActivities: Activity[] = [
         {
           time: '09:00',
@@ -582,7 +611,7 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
     
     // Add travel day between destinations (except for the last one)
     if (!isLastDestination && currentDay <= totalDays) {
-      const nextDestination = destinations[destIndex + 1]
+      const nextDestination = optimizedDestinations[destIndex + 1]
       
       itinerary.push({
         day: currentDay,
@@ -607,6 +636,8 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
         totalDuration: 240,
         isTravel: true,
         travelDetails: `Travel day from ${destination.name} to ${nextDestination.name}`
+        destinationId: nextDestination.id,
+        destinationName: nextDestination.name
       })
       
       currentDay++
