@@ -46,8 +46,10 @@ export interface GeneratedDayPlan {
 export const openRouterService = {
   async generateItinerary(request: TripPlanRequest): Promise<GeneratedDayPlan[]> {
     try {
-      console.log('Generating itinerary for:', request);
-      console.log('Trip duration:', Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1, 'days');
+      const expectedDays = Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      console.log('SERVICE: Generating itinerary for:', request.destination);
+      console.log('SERVICE: Trip duration:', expectedDays, 'days from', request.startDate, 'to', request.endDate);
+      console.log('SERVICE: Multi-destination:', request.isMultiDestination, 'with', request.destinations?.length || 0, 'destinations');
       
       // Make request to Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('generate-itinerary', {
@@ -63,7 +65,7 @@ export const openRouterService = {
         console.warn('Using fallback data:', data.error);
       }
 
-      console.log('Generated itinerary:', data?.itinerary?.length, 'days');
+      console.log('SERVICE: Received itinerary:', data?.itinerary?.length, 'days (expected', expectedDays, ')');
       if (data?.routeOptimization) {
         console.log('Route optimization applied:', data.routeOptimization);
       }
@@ -85,7 +87,7 @@ function generateMockItinerary(request: TripPlanRequest): GeneratedDayPlan[] {
   const endDate = new Date(request.endDate);
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   
-  console.log(`Generating ${days}-day mock itinerary`);
+  console.log(`SERVICE MOCK: Generating ${days}-day mock itinerary for ${request.startDate} to ${request.endDate}`);
   
   // Handle multi-destination trips
   if (request.isMultiDestination && request.destinations) {
@@ -162,7 +164,7 @@ function generateMockItinerary(request: TripPlanRequest): GeneratedDayPlan[] {
     });
   }
   
-  console.log(`Generated ${itinerary.length} days of single-destination mock itinerary`);
+  console.log(`SERVICE MOCK: Generated ${itinerary.length} days of single-destination mock itinerary`);
   return itinerary;
 }
 

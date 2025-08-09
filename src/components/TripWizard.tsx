@@ -149,12 +149,14 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
       // Generate itinerary using OpenRouter
       const itinerary = await openRouterService.generateItinerary(requestData);
 
-      console.log('Generated itinerary:', itinerary.length, 'days');
+      const expectedDays = Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      console.log(`WIZARD: Generated ${itinerary.length} days, expected ${expectedDays} days`);
       
       // Validate that we have the expected number of days
-      const expectedDays = Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
       if (itinerary.length !== expectedDays) {
-        console.warn(`Expected ${expectedDays} days, got ${itinerary.length} days`);
+        console.error(`WIZARD ERROR: Expected ${expectedDays} days, got ${itinerary.length} days`);
+        setError(`Generated itinerary has ${itinerary.length} days but expected ${expectedDays} days. Please try again.`);
+        return;
       }
 
       // Create trip in database
