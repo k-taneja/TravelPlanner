@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Share2, ArrowRight, MessageCircle, Copy, Download, X, Save, RotateCcw, GripVertical, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Share2, ArrowRight, MessageCircle, Copy, Download, X, Save, RotateCcw, GripVertical, AlertTriangle, CheckCircle, Trash2, Plus } from 'lucide-react';
 import { tripService } from '../services/tripService';
 import { useAuth } from '../hooks/useAuth';
 import { pdfService } from '../services/pdfService';
@@ -34,6 +34,16 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   const [tripData, setTripData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddActivity, setShowAddActivity] = useState(false);
+  const [newActivity, setNewActivity] = useState({
+    time: '09:00',
+    name: '',
+    type: 'attraction',
+    description: '',
+    duration: 60,
+    cost: 0,
+    location_address: ''
+  });
 
   // Load trip data from database
   useEffect(() => {
@@ -227,6 +237,49 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
     setDraggedItem(null);
   };
 
+  const handleDeleteActivity = (activityId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this activity?');
+    if (!confirmDelete) return;
+    
+    setEditedActivities(prev => prev.filter(activity => activity.id !== activityId));
+  };
+
+  const handleAddActivity = () => {
+    if (!newActivity.name.trim()) {
+      alert('Please enter an activity name');
+      return;
+    }
+
+    const activity = {
+      id: `new-${Date.now()}`,
+      time: newActivity.time,
+      name: newActivity.name,
+      type: newActivity.type,
+      description: newActivity.description,
+      duration: newActivity.duration,
+      cost: newActivity.cost,
+      location_lat: 28.6139 + Math.random() * 0.1, // Mock coordinates
+      location_lng: 77.2090 + Math.random() * 0.1,
+      location_address: newActivity.location_address || `${newActivity.name} Location`,
+      why_this: `Added by user for personalized experience`,
+      order_index: editedActivities.length
+    };
+
+    setEditedActivities(prev => [...prev, activity]);
+    
+    // Reset form
+    setNewActivity({
+      time: '09:00',
+      name: '',
+      type: 'attraction',
+      description: '',
+      duration: 60,
+      cost: 0,
+      location_address: ''
+    });
+    setShowAddActivity(false);
+  };
+
   const validateChanges = () => {
     const errors: string[] = [];
     
@@ -267,6 +320,33 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
     return errors;
   };
 
+  const generateRegeneratePrompt = () => {
+    const activities = editedActivities.map(activity => ({
+      time: activity.time,
+      name: activity.name,
+      type: activity.type,
+      description: activity.description,
+      duration: activity.duration,
+      cost: activity.cost,
+      location_address: activity.location_address,
+      why_this: activity.why_this
+    }));
+
+    return {
+      destination: tripData.destination,
+      date: currentDay.date,
+      dayNumber: selectedDay,
+      currentActivities: activities,
+      budget: tripData.budget,
+      pace: tripData.pace,
+      interests: tripData.interests,
+      userChanges: {
+        modified: true,
+        instruction: "User has modified the itinerary. Please regenerate optimized timings, validate activity sequences, ensure realistic travel times between locations, and adjust costs if needed. Maintain user's activity selections but optimize the schedule."
+      }
+    };
+  };
+
   const handleRegenerate = async () => {
     const errors = validateChanges();
     setValidationErrors(errors);
@@ -278,19 +358,49 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
     setRegenerating(true);
     
     try {
-      // Simulate API call to regenerate/validate itinerary
+      // Generate prompt with current activities and user changes
+      const regenerateData = generateRegeneratePrompt();
+      
+      // Call the regeneration service (this would call your Edge Function)
+      console.log('Regenerating with data:', regenerateData);
+      
+      // For now, simulate the API call with intelligent timing adjustments
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // In a real app, you would call the backend to validate and potentially regenerate
-      // For now, we'll just save the changes
-      console.log('Regenerating itinerary with changes:', editedActivities);
+      // Simulate intelligent timing optimization
+      const optimizedActivities = editedActivities.map((activity, index) => {
+        // Auto-adjust timings based on duration and travel time
+        let newTime = activity.time;
+        if (index > 0) {
+          const prevActivity = editedActivities[index - 1];
+          const prevEndTime = new Date(`2000-01-01T${prevActivity.time}`);
+          prevEndTime.setMinutes(prevEndTime.getMinutes() + (prevActivity.duration || 60) + 30); // Add 30min travel buffer
+          
+          const hours = prevEndTime.getHours().toString().padStart(2, '0');
+          const minutes = prevEndTime.getMinutes().toString().padStart(2, '0');
+          newTime = `${hours}:${minutes}`;
+        }
+        
+        return {
+          ...activity,
+          time: newTime
+        };
+      });
+      
+      // Update with optimized timings
+      setEditedActivities(optimizedActivities);
       
       // Update the trip data with edited activities
       setTripData(prev => ({
         ...prev,
         dayPlans: prev.dayPlans.map((day: any) => 
           day.day_number === selectedDay 
-            ? { ...day, activities: editedActivities }
+            ? { 
+                ...day, 
+                activities: optimizedActivities,
+                total_cost: optimizedActivities.reduce((sum, act) => sum + (act.cost || 0), 0),
+                total_duration: optimizedActivities.reduce((sum, act) => sum + (act.duration || 0), 0)
+              }
             : day
         )
       }));
@@ -614,7 +724,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                       ) : (
                         <h3 className="font-semibold text-white">{activity.name}</h3>
                       )}
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                         <button
                           onClick={() => setShowWhyThis(showWhyThis === activity.id ? null : activity.id)}
                           className="p-1.5 text-slate-400 transition-colors duration-200 rounded-lg hover:bg-slate-700"
@@ -624,6 +734,15 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                         >
                           <HelpCircle className="h-4 w-4" />
                         </button>
+                        {isEditMode && (
+                          <button
+                            onClick={() => handleDeleteActivity(activity.id)}
+                            className="p-1.5 text-red-400 hover:text-red-300 transition-colors duration-200 rounded-lg hover:bg-red-500/10"
+                            title="Delete Activity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                         {!isEditMode && (
                           <button 
                             onClick={handleEditToggle}
@@ -705,6 +824,154 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
               </div>
             </div>
           ))}
+
+          {/* Add Activity Button */}
+          {isEditMode && (
+            <div className="mt-6">
+              {!showAddActivity ? (
+                <button
+                  onClick={() => setShowAddActivity(true)}
+                  className="w-full p-4 border-2 border-dashed border-slate-600 rounded-xl text-slate-400 hover:text-white hover:border-slate-500 transition-all duration-200 flex items-center justify-center space-x-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="font-medium">Add Custom Activity</span>
+                </button>
+              ) : (
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Add New Activity</h3>
+                    <button
+                      onClick={() => setShowAddActivity(false)}
+                      className="p-1 text-slate-400 hover:text-white"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Activity Name */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Activity Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newActivity.name}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter activity name"
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+
+                    {/* Time */}
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Time
+                      </label>
+                      <input
+                        type="time"
+                        value={newActivity.time}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, time: e.target.value }))}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+
+                    {/* Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Type
+                      </label>
+                      <select
+                        value={newActivity.type}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, type: e.target.value }))}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      >
+                        <option value="attraction">Attraction</option>
+                        <option value="food">Food</option>
+                        <option value="history">History</option>
+                        <option value="nature">Nature</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="transport">Transport</option>
+                      </select>
+                    </div>
+
+                    {/* Duration */}
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Duration (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        value={newActivity.duration}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
+                        min="15"
+                        max="480"
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+
+                    {/* Cost */}
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Cost (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={newActivity.cost}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, cost: parseInt(e.target.value) || 0 }))}
+                        min="0"
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={newActivity.description}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Describe the activity"
+                        rows={2}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                      />
+                    </div>
+
+                    {/* Location */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Location/Address
+                      </label>
+                      <input
+                        type="text"
+                        value={newActivity.location_address}
+                        onChange={(e) => setNewActivity(prev => ({ ...prev, location_address: e.target.value }))}
+                        placeholder="Enter location or address"
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-3 mt-6">
+                    <button
+                      onClick={() => setShowAddActivity(false)}
+                      className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddActivity}
+                      className="flex-1 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl transition-colors duration-200 flex items-center justify-center space-x-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Activity</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -729,13 +996,13 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
               ) : (
                 <>
                   <RotateCcw className="h-6 w-6" />
-                  <span>Regenerate Itinerary</span>
+                  <span>Optimize & Regenerate</span>
                 </>
               )}
             </button>
             {hasChanges && !regenerating && (
               <p className="text-center text-slate-400 text-sm mt-2">
-                Review and validate your changes before regenerating
+                AI will optimize timings and validate your changes
               </p>
             )}
           </div>

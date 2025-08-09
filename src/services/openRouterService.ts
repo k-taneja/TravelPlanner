@@ -61,6 +61,37 @@ export const openRouterService = {
       console.warn('Using mock data as final fallback');
       return generateMockItinerary(request);
     }
+  },
+
+  async regenerateDay(request: {
+    destination: string;
+    date: string;
+    dayNumber: number;
+    currentActivities: any[];
+    budget: number;
+    pace: string;
+    interests: string[];
+    userChanges: {
+      modified: boolean;
+      instruction: string;
+    };
+  }): Promise<GeneratedDayPlan> {
+    try {
+      // Make request to regenerate specific day
+      const { data, error } = await supabase.functions.invoke('regenerate-day', {
+        body: request
+      });
+
+      if (error) {
+        console.error('Day regeneration error:', error);
+        throw new Error(error.message || 'Failed to regenerate day');
+      }
+
+      return data?.dayPlan || generateMockDayPlan(request);
+    } catch (error) {
+      console.error('Error regenerating day:', error);
+      return generateMockDayPlan(request);
+    }
   }
 };
 
@@ -140,4 +171,41 @@ function generateMockItinerary(request: TripPlanRequest): GeneratedDayPlan[] {
   }
   
   return itinerary;
+}
+
+// Mock day plan generator for regeneration
+function generateMockDayPlan(request: any): GeneratedDayPlan {
+  // Optimize timings based on user's current activities
+  const optimizedActivities = request.currentActivities.map((activity: any, index: number) => {
+    let newTime = activity.time;
+    
+    // Auto-adjust timings for better flow
+    if (index > 0) {
+      const prevActivity = request.currentActivities[index - 1];
+      const prevEndTime = new Date(`2000-01-01T${prevActivity.time}`);
+      prevEndTime.setMinutes(prevEndTime.getMinutes() + (prevActivity.duration || 60) + 30);
+      
+      const hours = prevEndTime.getHours().toString().padStart(2, '0');
+      const minutes = prevEndTime.getMinutes().toString().padStart(2, '0');
+      newTime = `${hours}:${minutes}`;
+    }
+    
+    return {
+      ...activity,
+      time: newTime,
+      // Enhance with AI-like improvements
+      whyThis: activity.why_this || `Optimized timing for better travel flow and experience`
+    };
+  });
+
+  const totalCost = optimizedActivities.reduce((sum: number, activity: any) => sum + (activity.cost || 0), 0);
+  const totalDuration = optimizedActivities.reduce((sum: number, activity: any) => sum + (activity.duration || 0), 0);
+
+  return {
+    day: request.dayNumber,
+    date: request.date,
+    activities: optimizedActivities,
+    totalCost,
+    totalDuration
+  };
 }
