@@ -70,26 +70,88 @@ serve(async (req) => {
     const end = new Date(endDate)
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
-    // Create detailed prompt for AI
-    const prompt = `Create a detailed ${days}-day travel itinerary for ${destination} with the following requirements:
+    // Get user preferences from database (if available)
+    let userPreferences = null
+    try {
+      const { data: preferences } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', 'current_user_id') // This would be passed from the request
+        .single()
+      userPreferences = preferences
+    } catch (error) {
+      console.log('No user preferences found, using defaults')
+    }
 
-TRIP DETAILS:
+    // Define activity counts based on pace
+    const paceConfig = {
+      relaxed: { activities: '1-2', restaurants: 1, description: 'leisurely exploration with plenty of rest time' },
+      balanced: { activities: '3-4', restaurants: 1, description: 'good mix of activities and relaxation' },
+      fast: { activities: '5-6', restaurants: 2, description: 'action-packed itinerary with maximum experiences' }
+    }
+
+    const currentPace = paceConfig[pace] || paceConfig.balanced
+
+    // Create comprehensive prompt for AI
+    const prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}. 
+
+TRIP REQUIREMENTS:
 - Destination: ${destination}
-- Dates: ${startDate} to ${endDate} (${days} days)
-- Budget: ₹${budget.toLocaleString('en-IN')} total
-- Travel Pace: ${pace}
-- Interests: ${interests.join(', ')}
-${from ? `- Starting from: ${from}` : ''}
+- Travel Dates: ${startDate} to ${endDate} (${days} days)
+- Total Budget: ₹${budget.toLocaleString('en-IN')} (approximately $${Math.round(budget/83)})
+- Travel Pace: ${pace.toUpperCase()} - ${currentPace.description}
+- Primary Interests: ${interests.join(', ')}
+${from ? `- Starting Location: ${from}` : ''}
 
-REQUIREMENTS:
-1. Create exactly ${days} days of activities
-2. Each day should have 3-4 activities with specific times
-3. Include a mix of: attractions, food experiences, cultural sites, and ${interests.join(', ')} activities
-4. Stay within budget (convert costs to INR, 1 USD ≈ 83 INR)
-5. Consider ${pace} pace: ${pace === 'relaxed' ? 'fewer activities, more time at each' : pace === 'fast' ? 'more activities, efficient timing' : 'balanced mix of activities and rest'}
-6. Provide realistic locations with coordinates for ${destination}
-7. Explain why each activity fits the traveler's interests
+PACE-SPECIFIC REQUIREMENTS:
+- ${pace.toUpperCase()} pace means ${currentPace.activities} main activities per day
+- Include ${currentPace.restaurants} restaurant/dining experience${currentPace.restaurants > 1 ? 's' : ''} per day
+- Balance activity intensity with appropriate rest periods
 
+USER PREFERENCES:
+${userPreferences ? `
+- Dietary Restrictions: ${userPreferences.dietary_restrictions || 'None specified'}
+- Food Preferences: ${userPreferences.food_preferences || 'Open to all cuisines'}
+- Travel Style: ${userPreferences.travel_style || 'Standard'}
+- Accessibility Needs: ${userPreferences.accessibility_needs || 'None specified'}
+- Budget Preference: ${userPreferences.budget_preference || 'Balanced spending'}
+- Accommodation Type: ${userPreferences.accommodation_type || 'Mid-range hotels'}
+` : '- Using default preferences (no user profile found)'}
+
+BUDGET ALLOCATION GUIDELINES:
+- Distribute budget across ${days} days (₹${Math.round(budget/days).toLocaleString('en-IN')} per day average)
+- Allocate 40% for activities/attractions, 35% for food, 15% for transport, 10% for miscellaneous
+- Suggest both budget-friendly and premium options when relevant
+- Consider local pricing and seasonal variations
+
+DETAILED REQUIREMENTS:
+1. Create exactly ${days} days with ${currentPace.activities} main activities per day
+2. Include ${currentPace.restaurants} dining experience(s) per day with local cuisine focus
+3. Start days between 8:00-10:00 AM, end by 8:00-10:00 PM based on pace
+4. Provide realistic timing with travel time between locations
+5. Include specific addresses and coordinates for ${destination}
+6. Consider weather, local customs, and opening hours
+7. Explain why each recommendation matches user interests and preferences
+8. Include insider tips and local recommendations
+9. Suggest alternatives for different weather conditions
+10. Provide cost breakdowns in Indian Rupees (₹)
+
+ACTIVITY TYPES TO INCLUDE:
+- Must-see attractions related to: ${interests.join(', ')}
+- Cultural experiences and local traditions
+- Food experiences matching dietary preferences
+- Hidden gems and off-the-beaten-path locations
+- Photo-worthy spots and Instagram-able locations
+- Local markets, shopping areas (if shopping is an interest)
+- Nature/outdoor activities (if nature is an interest)
+- Historical sites and museums (if history is an interest)
+
+TIMING AND LOGISTICS:
+- Account for travel time between locations (15-30 minutes buffer)
+- Consider meal times: breakfast (8-10 AM), lunch (12-2 PM), dinner (7-9 PM)
+- Include rest periods for ${pace} pace travelers
+- Suggest optimal visiting times to avoid crowds
+- Consider local transportation options and costs
 RESPONSE FORMAT (JSON only, no markdown):
 {
   "itinerary": [

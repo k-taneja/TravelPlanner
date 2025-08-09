@@ -4,6 +4,7 @@ import { interestOptions } from '../data/mockData';
 import { getFilteredCities } from '../data/popularCities';
 import { openRouterService } from '../services/openRouterService';
 import { tripService } from '../services/tripService';
+import { userPreferencesService } from '../services/userPreferencesService';
 import { useAuth } from '../hooks/useAuth';
 
 interface TripWizardProps {
@@ -42,6 +43,12 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
     setError(null);
 
     try {
+      // Get user preferences for enhanced itinerary generation
+      let userPreferences = null;
+      if (user) {
+        userPreferences = await userPreferencesService.getUserPreferences(user.id);
+      }
+
       // Generate itinerary using OpenRouter
       const itinerary = await openRouterService.generateItinerary({
         destination: formData.to,
@@ -50,7 +57,8 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
         budget: formData.budget,
         pace: formData.pace,
         interests: formData.interests,
-        from: formData.from
+        from: formData.from,
+        userPreferences
       });
 
       // Create trip in database

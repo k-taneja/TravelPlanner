@@ -11,6 +11,10 @@ interface UserDrawerProps {
 interface UserSettings {
   startTime: string;
   endTime: string;
+  foodPreferences?: string;
+  dietaryRestrictions?: string;
+  travelStyle?: string;
+  accommodationType?: string;
 }
 
 export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignOut }) => {
@@ -19,7 +23,11 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({
     startTime: '09:00',
-    endTime: '21:00'
+    endTime: '21:00',
+    foodPreferences: 'all',
+    dietaryRestrictions: '',
+    travelStyle: 'standard',
+    accommodationType: 'hotel'
   });
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -341,6 +349,80 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
                   <p className="text-xs text-slate-400 mt-1">
                     Current: {formatTime(settings.endTime)}
                   </p>
+                </div>
+
+                {/* Food Preferences */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Food Preferences
+                  </label>
+                  <select
+                    value={settings.foodPreferences || 'all'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, foodPreferences: e.target.value }))}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    <option value="all">All Cuisines</option>
+                    <option value="vegetarian">Vegetarian</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="local">Local Cuisine Only</option>
+                    <option value="international">International Cuisine</option>
+                    <option value="street_food">Street Food Lover</option>
+                    <option value="fine_dining">Fine Dining</option>
+                  </select>
+                </div>
+
+                {/* Dietary Restrictions */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Dietary Restrictions
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.dietaryRestrictions || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, dietaryRestrictions: e.target.value }))}
+                    placeholder="e.g., No pork, Gluten-free, Nut allergy"
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Travel Style */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Travel Style
+                  </label>
+                  <select
+                    value={settings.travelStyle || 'standard'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, travelStyle: e.target.value }))}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    <option value="budget">Budget Traveler</option>
+                    <option value="standard">Standard</option>
+                    <option value="luxury">Luxury</option>
+                    <option value="backpacker">Backpacker</option>
+                    <option value="family">Family Friendly</option>
+                    <option value="solo">Solo Traveler</option>
+                    <option value="couple">Couple</option>
+                  </select>
+                </div>
+
+                {/* Accommodation Preference */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Accommodation Preference
+                  </label>
+                  <select
+                    value={settings.accommodationType || 'hotel'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, accommodationType: e.target.value }))}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    <option value="hostel">Hostel</option>
+                    <option value="budget_hotel">Budget Hotel</option>
+                    <option value="hotel">Mid-range Hotel</option>
+                    <option value="luxury_hotel">Luxury Hotel</option>
+                    <option value="resort">Resort</option>
+                    <option value="airbnb">Airbnb/Homestay</option>
+                    <option value="boutique">Boutique Hotel</option>
+                  </select>
                 </div>
               </div>
 
