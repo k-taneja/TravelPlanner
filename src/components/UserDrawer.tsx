@@ -21,7 +21,6 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
     startTime: '09:00',
     endTime: '21:00'
   });
-  const [settingsLoading, setSe ttingsLoading] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
