@@ -50,10 +50,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
     loadSettings();
   }, [user]);
 
-  // Track unsaved changes
+  // Track unsaved changes by comparing with initial loaded settings
+  const [initialSettings, setInitialSettings] = useState<UserPreferences | null>(null);
+
+  // Set initial settings when loaded
   useEffect(() => {
-    setHasUnsavedChanges(true);
-  });
+    if (!loading && !initialSettings) {
+      setInitialSettings(settings);
+    }
+  }, [loading, settings, initialSettings]);
+
+  // Check for changes whenever settings change
+  useEffect(() => {
+    if (initialSettings) {
+      const hasChanges = JSON.stringify(settings) !== JSON.stringify(initialSettings);
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [settings, initialSettings]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -76,6 +89,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       });
       
       setSuccess(true);
+      // Update initial settings to reflect saved state
+      setInitialSettings(settings);
       setHasUnsavedChanges(false);
       
       // Hide success message after 3 seconds
