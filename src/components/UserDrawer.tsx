@@ -22,6 +22,7 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
     endTime: '21:00'
   });
   const [settingsLoading, setSe ttingsLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -93,6 +94,7 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
     }
     
     setSe ttingsLoading(true);
+    setSettingsLoading(true);
     
     try {
       // Simulate API call to save settings
@@ -111,7 +113,7 @@ export const UserDrawer: React.FC<UserDrawerProps> = ({ isOpen, onClose, onSignO
       console.error('Error saving settings:', error);
       setSettingsError('Failed to save settings. Please try again.');
     } finally {
-      setSe ttingsLoading(false);
+      setSettingsLoading(false);
     }
   };
 
