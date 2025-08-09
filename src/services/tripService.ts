@@ -49,29 +49,6 @@ export const tripService = {
     return data;
   },
 
-  // Create a destination
-  async createDestination(destinationData: DestinationInsert) {
-    const { data, error } = await supabase
-      .from('destinations')
-      .insert(destinationData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Create a trip segment
-  async createTripSegment(segmentData: TripSegmentInsert) {
-    const { data, error } = await supabase
-      .from('trip_segments')
-      .insert(segmentData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
   // Get user's trips
   async getUserTrips(userId: string) {
     const { data, error } = await supabase
@@ -108,19 +85,6 @@ export const tripService = {
       destinations = destData || [];
     }
 
-    // Get destinations if multi-destination trip
-    let destinations = [];
-    if (trip.is_multi_destination) {
-      const { data: destData, error: destError } = await supabase
-        .from('destinations')
-        .select('*')
-        .eq('trip_id', tripId)
-        .order('order_index');
-      
-      if (destError) throw destError;
-      destinations = destData || [];
-    }
-
     const { data: dayPlans, error: dayPlansError } = await supabase
       .from('day_plans')
       .select(`
@@ -134,7 +98,6 @@ export const tripService = {
 
     return {
       ...trip,
-      destinations,
       destinations,
       dayPlans: dayPlans.map(dayPlan => ({
         ...dayPlan,
@@ -168,30 +131,6 @@ export const tripService = {
     return data;
   },
 
-  // Get destinations for a trip
-  async getTripDestinations(tripId: string) {
-    const { data, error } = await supabase
-      .from('destinations')
-      .select('*')
-      .eq('trip_id', tripId)
-      .order('order_index');
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Update destination
-  async updateDestination(destinationId: string, updates: Partial<Destination>) {
-    const { data, error } = await supabase
-      .from('destinations')
-      .update(updates)
-      .eq('id', destinationId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
   // Create day plan
   async createDayPlan(dayPlanData: DayPlanInsert) {
     const { data, error } = await supabase
