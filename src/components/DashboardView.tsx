@@ -30,6 +30,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [archiveLoading, setArchiveLoading] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [archiveLoading, setArchiveLoading] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   // Load user trips from database
   useEffect(() => {
@@ -110,9 +113,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             budget: trip.budget,
             totalCost: trip.total_cost,
             archived: trip.archived || false
+            archived: trip.archived || false
           };
         });
         
+        // Filter out archived trips from main view
+        setTrips(transformedTrips.filter(trip => !trip.archived));
         // Filter out archived trips from main view
         setTrips(transformedTrips.filter(trip => !trip.archived));
       } catch (err) {
