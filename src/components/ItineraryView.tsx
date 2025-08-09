@@ -34,6 +34,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
   const [tripData, setTripData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [routeOptimization, setRouteOptimization] = useState<any>(null);
 
   // Load trip data from database
   useEffect(() => {
@@ -107,6 +108,11 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
       try {
         const trip = await tripService.getTripWithDetails(tripId);
         setTripData(trip);
+        
+        // Check if we have route optimization data
+        if (trip.routeOptimization) {
+          setRouteOptimization(trip.routeOptimization);
+        }
       } catch (err) {
         console.error('Error loading trip:', err);
         setError('Failed to load trip details');
@@ -417,6 +423,27 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
           <div className="flex items-start justify-between">
             {/* Trip Details */}
             <div className="flex-1">
+              {/* Route Optimization Notice */}
+              {routeOptimization && (
+                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-sm font-semibold text-green-400">AI Route Optimized</span>
+                  </div>
+                  <div className="text-xs text-green-300">
+                    <div className="mb-1">
+                      <span className="opacity-75">Original:</span> {routeOptimization.originalOrder?.join(' → ')}
+                    </div>
+                    <div className="mb-2">
+                      <span className="opacity-75">Optimized:</span> {routeOptimization.optimizedOrder?.join(' → ')}
+                    </div>
+                    <div className="text-xs opacity-90">
+                      {routeOptimization.reasoning}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Route */}
               <div className="flex items-center space-x-3 mb-4">
                 <div className="text-lg font-semibold text-white">Delhi</div>
@@ -480,12 +507,21 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
 
         {/* Day Selector */}
         <div className="mt-6">
+          {/* Trip Summary */}
+          {tripData.dayPlans && (
+            <div className="mb-4 text-center">
+              <div className="text-sm text-slate-400">
+                {tripData.dayPlans.length} days planned • {tripData.dayPlans.filter((d: any) => d.is_travel_day).length} travel days
+              </div>
+            </div>
+          )}
+          
           <div className="flex space-x-2 overflow-x-auto">
             {tripData.dayPlans?.map((day: any) => (
               <button
                 key={day.day_number}
                 onClick={() => setSelectedDay(day.day_number)}
-                className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all duration-200 font-medium ${
+                className={`px-4 py-3 rounded-xl whitespace-nowrap transition-all duration-200 font-medium min-w-[80px] ${
                   selectedDay === day.day_number
                     ? 'text-white shadow-sm border-2'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border border-slate-600'
@@ -493,12 +529,16 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                 style={selectedDay === day.day_number ? { backgroundColor: '#ff497c', borderColor: '#ff497c' } : {}}
               >
                 <div className="text-center">
-                  <div>Day {day.day_number}</div>
+                  <div className="font-bold">Day {day.day_number}</div>
                   {day.destination_name && (
-                    <div className="text-xs opacity-75 mt-1">{day.destination_name}</div>
+                    <div className="text-xs opacity-75 mt-1 truncate max-w-[60px]">
+                      {day.destination_name.split(',')[0]}
+                    </div>
                   )}
                   {day.is_travel_day && (
-                    <div className="text-xs opacity-75 mt-1">Travel Day</div>
+                    <div className="text-xs opacity-75 mt-1 bg-orange-500/20 px-1 rounded">
+                      Travel
+                    </div>
                   )}
                 </div>
               </button>
@@ -544,11 +584,25 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-bold text-white">
-                {new Date(currentDay.date).toLocaleDateString('en-US', { 
-                  weekday: 'long',
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
+                <div className="flex items-center space-x-3">
+                  <span>
+                    {new Date(currentDay.date).toLocaleDateString('en-US', { 
+                      weekday: 'long',
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                  {currentDay.destination_name && (
+                    <span className="text-sm px-3 py-1 rounded-full border" style={{ borderColor: '#ff497c', color: '#ff497c' }}>
+                      {currentDay.destination_name}
+                    </span>
+                  )}
+                  {currentDay.is_travel_day && (
+                    <span className="text-sm px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
+                      Travel Day
+                    </span>
+                  )}
+                </div>
               </h2>
               <div className="flex items-center space-x-4 text-sm text-slate-300 mt-1">
                 <div className="flex items-center">
@@ -562,6 +616,17 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
               </div>
             </div>
           </div>
+
+          {/* Travel Day Details */}
+          {currentDay.is_travel_day && currentDay.travel_details && (
+            <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span className="text-sm font-semibold text-orange-400">Travel Information</span>
+              </div>
+              <p className="text-sm text-orange-300">{currentDay.travel_details}</p>
+            </div>
+          )}
 
           {(isEditMode ? editedActivities : currentDay.activities)?.map((activity: any, index: number) => (
             <div key={activity.id} className="relative">
@@ -603,7 +668,12 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip
                         {formatTime(activity.time)}
                       </div>
                     )}
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg border-2" style={{ backgroundColor: '#ff497c20', borderColor: '#ff497c' }}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-lg border-2 ${
+                      activity.type === 'transport' ? 'bg-orange-500/20 border-orange-500' : ''
+                    }`} style={{ 
+                      backgroundColor: activity.type === 'transport' ? undefined : '#ff497c20', 
+                      borderColor: activity.type === 'transport' ? undefined : '#ff497c' 
+                    }}>
                       {getActivityIcon(activity.type)}
                     </div>
                   </div>

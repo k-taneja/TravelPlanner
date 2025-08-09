@@ -149,6 +149,14 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
       // Generate itinerary using OpenRouter
       const itinerary = await openRouterService.generateItinerary(requestData);
 
+      console.log('Generated itinerary:', itinerary.length, 'days');
+      
+      // Validate that we have the expected number of days
+      const expectedDays = Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (itinerary.length !== expectedDays) {
+        console.warn(`Expected ${expectedDays} days, got ${itinerary.length} days`);
+      }
+
       // Create trip in database
       const trip = await tripService.createTrip({
         user_id: user.id,
@@ -191,6 +199,8 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
 
       // Create day plans and activities
       for (const dayPlan of itinerary) {
+        console.log(`Creating day plan for day ${dayPlan.day}: ${dayPlan.destinationName || 'Single destination'}`);
+        
         const createdDayPlan = await tripService.createDayPlan({
           trip_id: trip.id,
           day_number: dayPlan.day,
@@ -222,6 +232,7 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
         }
       }
 
+      console.log(`Trip created successfully with ${itinerary.length} days`);
       onComplete(trip.id);
     } catch (err) {
       console.error('Error creating trip:', err);

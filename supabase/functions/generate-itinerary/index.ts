@@ -90,6 +90,12 @@ serve(async (req) => {
     const end = new Date(endDate)
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
+    console.log(`Planning ${days}-day trip from ${startDate} to ${endDate}`)
+    console.log(`Trip type: ${tripType}, Multi-destination: ${isMultiDestination}`)
+    if (destinations) {
+      console.log(`Destinations to optimize:`, destinations.map(d => d.name))
+    }
+
     // Define activity counts based on pace
     const paceConfig = {
       relaxed: { activities: '1-2', restaurants: 1, description: 'leisurely exploration with plenty of rest time' },
@@ -103,13 +109,40 @@ serve(async (req) => {
     let prompt = ''
     
     if (isMultiDestination && destinations) {
+      // AI-powered route optimization for multi-destination trips
+      const routeOptimizationPrompt = `
+CRITICAL: ROUTE OPTIMIZATION REQUIRED
+You must analyze and optimize the route for maximum efficiency and cost savings.
+
+ROUTE OPTIMIZATION ALGORITHM:
+1. GEOGRAPHICAL ANALYSIS: Consider the geographical proximity and logical flow between destinations
+2. COST OPTIMIZATION: Minimize total transportation costs by reducing backtracking
+3. TIME EFFICIENCY: Optimize travel sequence to minimize total travel time
+4. INTEREST ALIGNMENT: Allocate more time to destinations that match user interests: ${interests.join(', ')}
+5. SEASONAL FACTORS: Consider weather patterns, festivals, and peak seasons
+6. TRANSPORTATION EFFICIENCY: Choose optimal transport methods and routes
+
+ORIGINAL USER INPUT ORDER: ${destinations.map(d => d.name).join(' → ')}
+STARTING POINT: ${from || 'Not specified'}
+
+YOU MUST REORDER AND OPTIMIZE THE DESTINATIONS FOR:
+- Minimum total travel cost and time
+- Maximum interest satisfaction
+- Logical geographical flow
+- Efficient transportation connections
+
+PROVIDE CLEAR EXPLANATIONS for why you chose this optimized route over the user's original sequence.
+`
+
       const destinationList = destinations.map(d => `${d.name} (${tripType === 'multi_fixed' ? d.days + ' days' : 'flexible duration'})`).join(', ')
       
-      prompt = `You are an expert travel planner creating a personalized ${days}-day multi-destination itinerary.
+      prompt = `You are an expert travel planner and route optimization specialist creating a personalized ${days}-day multi-destination itinerary.
+
+${routeOptimizationPrompt}
 
 MULTI-DESTINATION TRIP REQUIREMENTS:
 - Trip Type: ${tripType.toUpperCase()}
-- Destinations: ${destinationList}
+- Original Destinations: ${destinationList}
 - Total Duration: ${days} days (${startDate} to ${endDate})
 - Starting Point: ${from || 'Not specified'}
 - Total Budget: ₹${budget.toLocaleString('en-IN')} (approximately $${Math.round(budget/83)})
@@ -118,57 +151,56 @@ MULTI-DESTINATION TRIP REQUIREMENTS:
 
 ${tripType === 'multi_fixed' ? 
     }
-  }
-  'FIXED ALLOCATION: Spend exactly the specified days at each destination.' :
-  'FLEXIBLE ALLOCATION: Optimize time allocation based on destination attractions, user interests, and travel logistics.'
-}
+CRITICAL REQUIREMENTS FOR ${days}-DAY TRIP:
+1. GENERATE EXACTLY ${days} DAYS - No more, no less
+2. OPTIMIZE ROUTE SEQUENCE - Do not follow user input order if inefficient
+3. INCLUDE ALL DESTINATIONS - But in the most efficient order
+4. ADD TRAVEL DAYS - Between destinations with realistic transport details
+5. BALANCE TIME ALLOCATION - Based on interests and destination offerings
 )
 }
 
-MULTI-DESTINATION PLANNING REQUIREMENTS:
-1. Plan activities for each destination based on allocated time
-2. Include travel days between destinations with realistic transport options
-3. Consider travel time, costs, and logistics between cities
-4. Optimize the route to minimize backtracking and travel time
-5. Allocate budget across destinations and transport
-6. Include rest time after long travel days
-7. Suggest best transport methods between destinations (flight, train, bus, car)
-8. Account for check-in/check-out times and luggage management
-
-ROUTE OPTIMIZATION REQUIREMENTS (for flexible trips):
-- Analyze geographical proximity of destinations
-- Minimize total travel time and costs
-- Consider seasonal factors and weather patterns
-- Optimize based on user interests (spend more time where interests align)
-- Factor in transportation availability and frequency
-- Suggest logical travel flow to reduce backtracking
-- Balance travel efficiency with experience quality
-
-DESTINATION-SPECIFIC REQUIREMENTS:
-${destinations.map((dest, index) => `
-${index + 1}. ${dest.name}:
-   - ${tripType === 'multi_fixed' ? `Fixed: ${dest.days} days` : 'Flexible duration (AI optimized)'}
-   - Focus on attractions matching interests: ${interests.join(', ')}
-   - Include local cuisine and cultural experiences
-   - Plan ${currentPace.activities} activities per day
-`).join('')}
-
-${tripType === 'multi_flexible' ? `
-FLEXIBLE ALLOCATION OPTIMIZATION:
-- Analyze each destination's attraction density and variety
-- Allocate more days to destinations with higher interest alignment
-- Consider seasonal factors (weather, festivals, peak seasons)
-- Factor in travel fatigue and optimal trip flow
+${tripType === 'multi_fixed' ? 
+  `FIXED ALLOCATION WITH OPTIMIZATION:
+- Maintain specified days per destination: ${destinations.map(d => `${d.name} (${d.days} days)`).join(', ')}
+- But REORDER destinations for optimal route efficiency
+- Add travel days between destinations (not counted in fixed days)
+- Total trip must be exactly ${days} days including travel days` :
+  `FLEXIBLE ALLOCATION WITH FULL OPTIMIZATION:
+- REORDER destinations for maximum efficiency
+- REALLOCATE days based on interest alignment and destination density
 - Suggest 2-5 days per destination based on available activities
 - Ensure minimum 2 days per destination for meaningful experience
-- Optimize total route for cost and time efficiency
-` : ''}
+- Include travel days between destinations
+- Total trip must be exactly ${days} days`
+}
 
-TRAVEL LOGISTICS:
-- Research realistic travel times between destinations
-- Suggest most efficient transport methods
-- Include buffer time for delays and rest
-- Consider luggage storage options during travel days
+ROUTE OPTIMIZATION EXAMPLES:
+- If user inputs: Mumbai → Goa → Chennai → Bangalore
+- Optimal route might be: Mumbai → Goa → Bangalore → Chennai (reduces backtracking)
+- Or: Mumbai → Chennai → Bangalore → Goa (based on interests and seasons)
+
+TRAVEL DAY REQUIREMENTS:
+- Include realistic travel days between destinations
+- Provide specific transport recommendations (flight, train, bus)
+- Include travel costs and duration
+- Account for check-in/check-out logistics
+- Add buffer time for delays and rest
+
+DESTINATION-SPECIFIC REQUIREMENTS:
+For each destination in your OPTIMIZED route order:
+- Focus on attractions matching interests: ${interests.join(', ')}
+- Include local cuisine and cultural experiences  
+- Plan ${currentPace.activities} activities per day
+- Provide clear reasoning for time allocation
+- Suggest best activities based on user interests
+
+EXPLANATION REQUIREMENT:
+You MUST include in your response an explanation of:
+1. Why you chose this route order over the user's original sequence
+2. How this optimization saves time and money
+3. How the route maximizes the user's interests: ${interests.join(', ')}
+4. What transportation methods you recommend between destinations`
     } else {
       // Single destination prompt (existing logic)
       prompt = `You are an expert travel planner creating a personalized ${days}-day itinerary for ${destination}.`
@@ -244,8 +276,11 @@ TIMING AND LOGISTICS:
 - Suggest optimal visiting times to avoid crowds
 - Consider local transportation options and costs
 
-RESPONSE FORMAT (JSON only, no markdown):
+CRITICAL: RESPONSE FORMAT (JSON only, no markdown):
+You must generate exactly ${days} days. Include route optimization explanation.
+
 {
+  ${isMultiDestination ? '"routeOptimization": {"originalOrder": ["' + destinations?.map(d => d.name).join('", "') + '"], "optimizedOrder": ["Optimized", "Route", "Order"], "reasoning": "Detailed explanation of why this route is better"},' : ''}
   "itinerary": [
     {
       "day": 1,
@@ -288,7 +323,7 @@ RESPONSE FORMAT (JSON only, no markdown):
         messages: [
           {
             role: 'system',
-            content: `You are an expert travel planner specializing in ${isMultiDestination ? 'multi-destination' : 'single-destination'} trips. Create detailed, realistic itineraries with accurate locations, costs in Indian Rupees, and explanations. Always respond with valid JSON only.`
+            content: `You are an expert travel planner and route optimization specialist specializing in ${isMultiDestination ? 'multi-destination' : 'single-destination'} trips. You MUST generate exactly ${days} days of itinerary. For multi-destination trips, you MUST optimize the route order for cost and time efficiency, not follow user input order. Create detailed, realistic itineraries with accurate locations, costs in Indian Rupees, and explanations. Always respond with valid JSON only.`
           },
           {
             role: 'user',
@@ -296,7 +331,7 @@ RESPONSE FORMAT (JSON only, no markdown):
           }
         ],
         temperature: 0.7,
-        max_tokens: isMultiDestination ? 6000 : 4000
+        max_tokens: isMultiDestination ? 8000 : 4000
       })
     })
 
@@ -310,6 +345,9 @@ RESPONSE FORMAT (JSON only, no markdown):
     if (!content) {
       throw new Error('No content received from AI')
     }
+
+    console.log('AI Response length:', content.length)
+    console.log('AI Response preview:', content.substring(0, 500))
 
     // Parse AI response
     let parsedResponse
@@ -327,6 +365,40 @@ RESPONSE FORMAT (JSON only, no markdown):
 
     // Validate and return the itinerary
     const itinerary = parsedResponse.itinerary || []
+    const routeOptimization = parsedResponse.routeOptimization || null
+    
+    console.log(`Generated ${itinerary.length} days for ${days}-day trip`)
+    if (routeOptimization) {
+      console.log('Route optimization:', routeOptimization)
+    }
+    
+    // Validate that we have the correct number of days
+    if (itinerary.length !== days) {
+      console.warn(`Expected ${days} days, got ${itinerary.length} days. Adjusting...`)
+      
+      // If we have fewer days than expected, extend with mock data
+      while (itinerary.length < days) {
+        const lastDay = itinerary[itinerary.length - 1]
+        const nextDayNumber = itinerary.length + 1
+        const nextDate = new Date(startDate)
+        nextDate.setDate(nextDate.getDate() + nextDayNumber - 1)
+        
+        itinerary.push({
+          day: nextDayNumber,
+          date: nextDate.toISOString().split('T')[0],
+          activities: lastDay?.activities || [],
+          totalCost: lastDay?.totalCost || 0,
+          totalDuration: lastDay?.totalDuration || 0,
+          destinationName: lastDay?.destinationName || 'Additional Day',
+          isTravel: false
+        })
+      }
+      
+      // If we have more days than expected, trim
+      if (itinerary.length > days) {
+        itinerary.splice(days)
+      }
+    }
     
     // Map destination names back to client-side IDs for multi-destination trips
     if (isMultiDestination && destinations) {
@@ -406,7 +478,12 @@ RESPONSE FORMAT (JSON only, no markdown):
     }))
     
     return new Response(
-      JSON.stringify({ itinerary: normalizedItinerary }),
+      JSON.stringify({ 
+        itinerary: normalizedItinerary,
+        routeOptimization,
+        totalDays: normalizedItinerary.length,
+        generatedDays: days
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
@@ -437,6 +514,8 @@ function generateMockItinerary(request: TripRequest): DayPlan[] {
   const startDate = new Date(request.startDate)
   const endDate = new Date(request.endDate)
   const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  
+  console.log(`Generating mock itinerary for ${days} days`)
   
   // Handle multi-destination trips
   if (request.isMultiDestination && request.destinations) {
@@ -513,6 +592,7 @@ function generateMockItinerary(request: TripRequest): DayPlan[] {
     })
   }
   
+  console.log(`Generated ${itinerary.length} days of mock itinerary`)
   return itinerary
 }
 
@@ -522,26 +602,37 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
   const destinations = request.destinations!
   const itinerary: DayPlan[] = []
   
+  console.log(`Generating multi-destination mock for ${totalDays} days with ${destinations.length} destinations`)
+  
+  // AI-powered route optimization for mock data
+  let optimizedDestinations = [...destinations]
+  
+  // Simple geographical optimization (in real implementation, this would use actual coordinates)
+  if (request.tripType === 'multi_flexible') {
+    // Simulate route optimization based on common geographical knowledge
+    optimizedDestinations = optimizeDestinationOrder(destinations, request.interests)
+    console.log('Optimized route order:', optimizedDestinations.map(d => d.name))
+  }
+  
   let currentDay = 1
   let currentDate = new Date(startDate)
   
-  // For flexible trips, optimize the route and allocate days intelligently
-  let optimizedDestinations = [...destinations]
+  // Calculate days allocation for flexible trips
   if (request.tripType === 'multi_flexible') {
-    // Simple optimization: allocate days based on destination importance
-    const remainingDays = totalDays - destinations.length // Reserve 1 travel day between each destination
-    const baseDaysPerDestination = Math.floor(remainingDays / destinations.length)
-    const extraDays = remainingDays % destinations.length
+    const travelDays = Math.max(0, optimizedDestinations.length - 1) // Travel days between destinations
+    const availableDays = totalDays - travelDays
+    const baseDaysPerDestination = Math.floor(availableDays / optimizedDestinations.length)
+    const extraDays = availableDays % optimizedDestinations.length
     
-    optimizedDestinations = destinations.map((dest, index) => ({
+    optimizedDestinations = optimizedDestinations.map((dest, index) => ({
       ...dest,
-      days: baseDaysPerDestination + (index < extraDays ? 1 : 0) + 2 // +2 for minimum meaningful stay
+      days: Math.max(2, baseDaysPerDestination + (index < extraDays ? 1 : 0)) // Minimum 2 days per destination
     }))
   }
   
   for (let destIndex = 0; destIndex < optimizedDestinations.length; destIndex++) {
     const destination = optimizedDestinations[destIndex]
-    const isLastDestination = destIndex === destinations.length - 1
+    const isLastDestination = destIndex === optimizedDestinations.length - 1
     
     // Calculate days for this destination
     let daysForDestination = destination.days
@@ -649,5 +740,86 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
     }
   }
   
+  // Ensure we have exactly the right number of days
+  while (itinerary.length < totalDays && optimizedDestinations.length > 0) {
+    const lastDestination = optimizedDestinations[optimizedDestinations.length - 1]
+    const nextDate = new Date(startDate)
+    nextDate.setDate(nextDate.getDate() + itinerary.length)
+    
+    itinerary.push({
+      day: itinerary.length + 1,
+      date: nextDate.toISOString().split('T')[0],
+      activities: [
+        {
+          time: '09:00',
+          name: `Extended Stay in ${lastDestination.name}`,
+          type: 'attraction',
+          description: `Additional exploration day in ${lastDestination.name}`,
+          duration: 120,
+          cost: Math.floor(request.budget * 0.05),
+          location: {
+            lat: 28.6139 + Math.random() * 0.1,
+            lng: 77.2090 + Math.random() * 0.1,
+            address: `${lastDestination.name} Extended Area`
+          },
+          whyThis: 'Additional time to explore based on your interests'
+        }
+      ],
+      totalCost: Math.floor(request.budget * 0.05),
+      totalDuration: 120,
+      destinationId: lastDestination.id,
+      destinationName: lastDestination.name
+    })
+  }
+  
+  console.log(`Generated ${itinerary.length} days of multi-destination mock itinerary`)
   return itinerary
+}
+
+// Simple route optimization function for mock data
+function optimizeDestinationOrder(destinations: Array<{ id: string; name: string; days: number }>, interests: string[]): Array<{ id: string; name: string; days: number }> {
+  // This is a simplified optimization. In a real implementation, you would use:
+  // - Actual geographical coordinates
+  // - Real distance/cost calculations
+  // - Advanced routing algorithms
+  
+  const optimized = [...destinations]
+  
+  // Simple geographical optimization based on common knowledge
+  const geographicalGroups: { [key: string]: string[] } = {
+    'north': ['delhi', 'agra', 'jaipur', 'chandigarh', 'shimla', 'manali'],
+    'west': ['mumbai', 'pune', 'goa', 'ahmedabad', 'udaipur', 'jodhpur'],
+    'south': ['bangalore', 'chennai', 'hyderabad', 'kochi', 'mysore', 'coorg'],
+    'east': ['kolkata', 'bhubaneswar', 'darjeeling', 'gangtok']
+  }
+  
+  // Group destinations by region
+  const regionGroups: { [key: string]: typeof destinations } = {}
+  
+  optimized.forEach(dest => {
+    const destName = dest.name.toLowerCase()
+    let region = 'other'
+    
+    for (const [regionName, cities] of Object.entries(geographicalGroups)) {
+      if (cities.some(city => destName.includes(city))) {
+        region = regionName
+        break
+      }
+    }
+    
+    if (!regionGroups[region]) {
+      regionGroups[region] = []
+    }
+    regionGroups[region].push(dest)
+  })
+  
+  // Reorder to minimize inter-region travel
+  const reordered: typeof destinations = []
+  
+  // Add destinations region by region to minimize backtracking
+  Object.values(regionGroups).forEach(regionDests => {
+    reordered.push(...regionDests)
+  })
+  
+  return reordered.length > 0 ? reordered : optimized
 }
