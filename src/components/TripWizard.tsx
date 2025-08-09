@@ -166,15 +166,27 @@ export const TripWizard: React.FC<TripWizardProps> = ({ onComplete, onBack }) =>
 
       // Create destinations if multi-destination trip
       if (tripType !== 'single') {
+        const destinationMapping: { [clientId: string]: string } = {};
+        
         for (let i = 0; i < destinations.length; i++) {
           const dest = destinations[i];
-          await tripService.createDestination({
+          const createdDestination = await tripService.createDestination({
             trip_id: trip.id,
             name: dest.name,
             order_index: i,
             planned_days: dest.days
           });
+          
+          // Map client-side ID to database UUID
+          destinationMapping[dest.id] = createdDestination.id;
         }
+        
+        // Update itinerary with correct destination UUIDs
+        itinerary.forEach(dayPlan => {
+          if (dayPlan.destinationId && destinationMapping[dayPlan.destinationId]) {
+            dayPlan.destinationId = destinationMapping[dayPlan.destinationId];
+          }
+        });
       }
 
       // Create day plans and activities
