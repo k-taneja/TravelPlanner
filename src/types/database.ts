@@ -508,20 +508,6 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
             address: `Main Area, ${destination.name}`
           },
           whyThis: `Perfect introduction to ${destination.name} based on your interests: ${request.interests.join(', ')}`
-        },
-        {
-          time: '12:30',
-          name: `Local Cuisine in ${destination.name}`,
-          type: 'food',
-          description: `Authentic local food experience in ${destination.name}`,
-          duration: 90,
-          cost: Math.floor(request.budget * 0.05 / totalDays),
-          location: {
-            lat: 28.6139 + Math.random() * 0.1,
-            lng: 77.2090 + Math.random() * 0.1,
-            address: `Food District, ${destination.name}`
-          },
-          whyThis: 'Experience local flavors and culinary traditions'
         }
       ]
       
@@ -544,7 +530,7 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
     }
     
     // Add travel day if not the last destination
-    if (!isLastDestination && currentDay <= totalDays) {
+    if (!isLastDestination) {
       const nextDestination = destinations[destIndex + 1]
       
       itinerary.push({
@@ -560,15 +546,15 @@ function generateMultiDestinationMockItinerary(request: TripRequest, totalDays: 
           type: 'transport',
           description: `Journey from ${destination.name} to ${nextDestination.name}`,
           duration: 240,
-          cost: Math.floor(request.budget * 0.1 / destinations.length),
+          cost: Math.floor(request.budget * 0.05),
           location: {
             lat: 28.6139,
             lng: 77.2090,
-            address: `Transport Hub, ${destination.name}`
+            address: `En route to ${nextDestination.name}`
           },
           whyThis: 'Efficient travel between destinations'
         }],
-        totalCost: Math.floor(request.budget * 0.1 / destinations.length),
+        totalCost: Math.floor(request.budget * 0.05),
         totalDuration: 240
       })
       
