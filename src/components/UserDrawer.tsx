@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Archive, Settings, LogOut, Clock, Save, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { tripService } from '../services/tripService';
 
 interface UserDrawerProps {
   isOpen: boolean;
