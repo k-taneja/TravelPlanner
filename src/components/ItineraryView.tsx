@@ -1,0 +1,493 @@
+import React, { useState } from 'react';
+import { useEffect } from 'react';
+import { Calendar, Clock, DollarSign, MapPin, HelpCircle, Edit3, Plane, User, Share2, ArrowRight, MessageCircle, Copy, Download, X } from 'lucide-react';
+import { tripService } from '../services/tripService';
+import { useAuth } from '../hooks/useAuth';
+import { Activity } from '../types';
+
+interface ItineraryViewProps {
+  tripId?: string;
+  onEditTrip: () => void;
+  onShowMap: () => void;
+  onBack: () => void;
+  onLogout: () => void;
+}
+
+export const ItineraryView: React.FC<ItineraryViewProps> = ({ tripId, onEditTrip, onShowMap, onBack, onLogout }) => {
+  const { user } = useAuth();
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [showWhyThis, setShowWhyThis] = useState<string | null>(null);
+  const [showSharePopup, setShowSharePopup] = useState(false);
+  const [showLogoutDrawer, setShowLogoutDrawer] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [tripData, setTripData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load trip data from database
+  useEffect(() => {
+    const loadTripData = async () => {
+      if (!tripId || !user) {
+        // Use mock data for demo/guest users
+        const mockTripData = {
+          id: 'mock-trip',
+          destination: 'Paris, France',
+          start_date: '2025-03-15',
+          end_date: '2025-03-18',
+          budget: 100000,
+          pace: 'balanced',
+          interests: ['history', 'food', 'art'],
+          total_cost: 7636,
+          dayPlans: [
+            {
+              day_number: 1,
+              date: '2025-03-15',
+              total_cost: 7636,
+              total_duration: 390,
+              activities: [
+                {
+                  id: '1',
+                  time: '09:00',
+                  name: 'Eiffel Tower Visit',
+                  type: 'attraction',
+                  description: 'Iconic iron tower with city views',
+                  duration: 120,
+                  cost: 2075,
+                  location_lat: 48.8584,
+                  location_lng: 2.2945,
+                  location_address: 'Champ de Mars, 5 Avenue Anatole France, 75007 Paris',
+                  why_this: 'Most iconic landmark in Paris, best views in the morning with fewer crowds'
+                },
+                {
+                  id: '2',
+                  time: '12:30',
+                  name: 'Café de Flore Lunch',
+                  type: 'food',
+                  description: 'Historic café with French cuisine',
+                  duration: 90,
+                  cost: 2905,
+                  location_lat: 48.8542,
+                  location_lng: 2.3320,
+                  location_address: '172 Boulevard Saint-Germain, 75006 Paris',
+                  why_this: 'Famous literary café, perfect for experiencing Parisian culture'
+                },
+                {
+                  id: '3',
+                  time: '15:00',
+                  name: 'Louvre Museum',
+                  type: 'attraction',
+                  description: 'World\'s largest art museum',
+                  duration: 180,
+                  cost: 1411,
+                  location_lat: 48.8606,
+                  location_lng: 2.3376,
+                  location_address: 'Rue de Rivoli, 75001 Paris',
+                  why_this: 'Must-see art collection including Mona Lisa, afternoon has shorter lines'
+                }
+              ]
+            }
+          ]
+        };
+        setTripData(mockTripData);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const trip = await tripService.getTripWithDetails(tripId);
+        setTripData(trip);
+      } catch (err) {
+        console.error('Error loading trip:', err);
+        setError('Failed to load trip details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTripData();
+  }, [tripId, user]);
+
+  const currentDay = tripData?.dayPlans?.find((day: any) => day.day_number === selectedDay);
+
+  const getActivityIcon = (type: Activity['type']) => {
+    const icons = {
+      attraction: '🏛️',
+      food: '🍽️',
+      transport: '🚗',
+      shopping: '🛍️',
+      nature: '🌿',
+      history: '🏛️'
+    };
+    return icons[type] || '📍';
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(`https://planora.app/trip/shared-${tripData?.id || 'demo'}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareToWhatsApp = () => {
+    const message = `Check out my ${tripData?.destination} itinerary! 🏛️\n\n${tripData?.dayPlans?.length || 0} days of amazing activities planned by AI.\n\nView full itinerary: https://planora.app/trip/shared-${tripData?.id || 'demo'}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    setShowSharePopup(false);
+  };
+
+  const downloadPDF = () => {
+    alert('PDF download would start here in a real app');
+    setShowSharePopup(false);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `₹${(amount * 83).toLocaleString('en-IN')}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#ff497c' }}></div>
+          <p className="text-white">Loading your itinerary...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !tripData) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 max-w-md">
+            <p className="text-red-400 mb-4">{error || 'Trip not found'}</p>
+            <button
+              onClick={onBack}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* Fixed Top Navigation */}
+      <nav className="fixed top-0 left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700 z-50">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <button
+              onClick={onBack}
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200"
+            >
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#ff497c' }}>
+                <Plane className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-white">Planora</span>
+            </button>
+
+            {/* Right Icons */}
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={() => setShowLogoutDrawer(true)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors duration-200"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Trip Header Card */}
+      <div className="pt-20 px-6 py-6">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-2xl p-6 shadow-xl border border-slate-600">
+          <div className="flex items-start justify-between">
+            {/* Trip Details */}
+            <div className="flex-1">
+              {/* Route */}
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="text-lg font-semibold text-white">Delhi</div>
+                <ArrowRight className="h-5 w-5 text-slate-400" />
+                <div className="text-lg font-semibold text-white">{tripData.destination}</div>
+              </div>
+              
+              {/* Trip Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Dates</div>
+                  <div className="text-sm text-white font-medium">
+                    {formatDate(tripData.start_date)} - {formatDate(tripData.end_date)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Budget</div>
+                  <div className="text-sm text-white font-medium">
+                    {formatCurrency(tripData.budget || 1500)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total Cost</div>
+                  <div className="text-sm font-medium" style={{ color: '#ff497c' }}>
+                    ₹{(tripData.total_cost * 83).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Icons */}
+            <div className="flex items-center space-x-3 ml-6">
+              <button
+                onClick={onShowMap}
+                className="p-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all duration-200 hover:scale-105 border border-slate-600 hover:border-slate-500"
+                title="View on Map"
+              >
+                <MapPin className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setShowSharePopup(true)}
+                className="p-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all duration-200 hover:scale-105 border border-slate-600 hover:border-slate-500"
+                title="Share Trip"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Day Selector */}
+        <div className="mt-6">
+          <div className="flex space-x-2 overflow-x-auto">
+            {tripData.dayPlans?.map((day: any) => (
+              <button
+                key={day.day_number}
+                onClick={() => setSelectedDay(day.day_number)}
+                className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all duration-200 font-medium ${
+                  selectedDay === day.day_number
+                    ? 'text-white shadow-sm border-2'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border border-slate-600'
+                }`}
+                style={selectedDay === day.day_number ? { backgroundColor: '#ff497c', borderColor: '#ff497c' } : {}}
+              >
+                Day {day.day_number}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Activities */}
+      {currentDay && (
+        <div className="px-6 py-6 space-y-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {new Date(currentDay.date).toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </h2>
+              <div className="flex items-center space-x-4 text-sm text-slate-300 mt-1">
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  {Math.floor((currentDay.total_duration || 0) / 60)}h {(currentDay.total_duration || 0) % 60}m
+                </div>
+                <div className="flex items-center">
+                  <DollarSign className="h-4 w-4 mr-1" />
+                  ₹{(currentDay.total_cost || 0).toLocaleString('en-IN')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {currentDay.activities?.map((activity: any, index: number) => (
+            <div key={activity.id} className="relative">
+              {/* Timeline connector */}
+              {index < (currentDay.activities?.length || 0) - 1 && (
+                <div className="absolute left-6 top-16 w-0.5 h-8 bg-slate-600" />
+              )}
+              
+              <div className="bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-700 hover:shadow-md transition-all duration-200">
+                <div className="flex items-start space-x-4">
+                  {/* Time & Icon */}
+                  <div className="flex-shrink-0 text-center">
+                    <div className="text-sm font-semibold mb-1" style={{ color: '#ff497c' }}>
+                      {formatTime(activity.time)}
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg border-2" style={{ backgroundColor: '#ff497c20', borderColor: '#ff497c' }}>
+                      {getActivityIcon(activity.type)}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-white">{activity.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setShowWhyThis(showWhyThis === activity.id ? null : activity.id)}
+                          className="p-1.5 text-slate-400 transition-colors duration-200 rounded-lg hover:bg-slate-700"
+                          style={{ '--hover-color': '#ff497c' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#ff497c'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+                        >
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                        <button className="p-1.5 text-slate-400 hover:text-slate-300 transition-colors duration-200 rounded-lg hover:bg-slate-700">
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-slate-300 mb-3">{activity.description}</p>
+                    
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-4 text-slate-400">
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {activity.duration}min
+                        </div>
+                        <div className="flex items-center">
+                          <span className="text-xs mr-1">₹</span>
+                          {activity.cost?.toLocaleString('en-IN') || '0'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Why This Explanation */}
+                    {showWhyThis === activity.id && (
+                      <div className="mt-4 p-4 rounded-lg border-l-4" style={{ backgroundColor: '#ff497c20', borderColor: '#ff497c' }}>
+                        <p className="text-sm text-slate-200">
+                          <span className="font-semibold">Why this? </span>
+                          {activity.why_this}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Share Popup */}
+      {showSharePopup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-600 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-white">Share Your Trip</h3>
+              <button
+                onClick={() => setShowSharePopup(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors duration-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {/* WhatsApp Share */}
+              <button
+                onClick={shareToWhatsApp}
+                className="w-full p-4 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center justify-center space-x-3 transition-all duration-200 hover:scale-[0.98]"
+              >
+                <MessageCircle className="h-5 w-5" />
+                <span className="font-semibold">Share on WhatsApp</span>
+              </button>
+              
+              {/* Copy Link */}
+              <button
+                onClick={handleCopyLink}
+                className={`w-full p-4 rounded-xl flex items-center justify-center space-x-3 transition-all duration-200 hover:scale-[0.98] ${
+                  copied 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Copy className="h-5 w-5" />
+                    <span className="font-semibold">Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-5 w-5" />
+                    <span className="font-semibold">Copy Link</span>
+                  </>
+                )}
+              </button>
+              
+              {/* Download PDF */}
+              <button
+                onClick={downloadPDF}
+                className="w-full p-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl flex items-center justify-center space-x-3 transition-all duration-200 hover:scale-[0.98] border border-slate-600"
+              >
+                <Download className="h-5 w-5" />
+                <span className="font-semibold">Download PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Drawer */}
+      {showLogoutDrawer && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-start justify-end p-4"
+          onClick={() => setShowLogoutDrawer(false)}
+        >
+          <div 
+            className="bg-slate-800 rounded-2xl p-4 w-64 mt-16 mr-4 border border-slate-600 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white">Account</h3>
+              <button
+                onClick={() => setShowLogoutDrawer(false)}
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors duration-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="px-3 py-2 text-sm text-slate-300 border-b border-slate-700">
+                <div className="font-medium">Guest User</div>
+                <div className="text-xs text-slate-400">guest@travelai.app</div>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setShowLogoutDrawer(false);
+                  onBack(); // This will navigate to login screen
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-slate-700 rounded-lg transition-colors duration-200"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
