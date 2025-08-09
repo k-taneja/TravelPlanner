@@ -2,6 +2,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { tripService } from '../services/tripService';
+import { pdfService } from '../services/pdfService';
 import { Search, Bell, User, Plane, Calendar, MapPin, Wifi, Clock } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -23,6 +24,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
 
   // Load user trips from database
   useEffect(() => {
@@ -138,6 +140,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         return 'COMPLETED';
       default:
         return 'UPCOMING';
+    }
+  };
+
+  const handleDownloadTripPDF = async (trip: any) => {
+    setPdfLoading(trip.id);
+    try {
+      // Convert trip data to PDF format
+      const pdfData = {
+        id: trip.id,
+        destination: trip.destination,
+        startDate: trip.start_date || '2025-03-15',
+        endDate: trip.end_date || '2025-03-18',
+        budget: trip.budget || 100000,
+        totalCost: trip.total_cost || 92,
+        pace: trip.pace || 'balanced',
+        interests: trip.interests || ['history', 'food', 'art'],
+        dayPlans: trip.dayPlans || [
+          {
+            day_number: 1,
+            date: trip.start_date || '2025-03-15',
+            total_cost: trip.total_cost || 92,
+            total_duration: 390,
+            activities: [
+              {
+                time: '09:00',
+                name: `Explore ${trip.destination}`,
+                type: 'attraction',
+                description: `Discover the main attractions of ${trip.destination}`,
+                duration: 120,
+                cost: 25,
+                location_address: `Main Area, ${trip.destination}`,
+                why_this: `Perfect introduction to ${trip.destination}`
+              }
+            ]
+          }
+        ]
+      };
+
+      await pdfService.generateTripPDF(pdfData);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setPdfLoading(null);
     }
   };
 
@@ -282,7 +328,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     
                     {/* Card Footer */}
                     <div className="p-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-3">
                         <div>
                           <p className="text-sm text-gray-600 mb-1">{trip.dates}</p>
                           <div className="flex items-center">
@@ -292,6 +338,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             </span>
                           </div>
                         </div>
+                      </div>
+                      
+                      {/* Quick Actions */}
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewItinerary(trip.id.toString());
+                          }}
+                          className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadTripPDF(trip);
+                          }}
+                          disabled={pdfLoading === trip.id}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                            pdfLoading === trip.id
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {pdfLoading === trip.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+                          ) : (
+                            'PDF'
+                          )}
+                        </button>
                       </div>
                     </div>
                   </div>
